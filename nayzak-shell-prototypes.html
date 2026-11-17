@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nayzak — six shells</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Outfit:wght@360;480;560&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --studio: #141414;
+    --studio-ink: #eceae4;
+    --studio-dim: #9a968c;
+    --line: rgba(255,255,255,.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--studio);
+    color: var(--studio-ink);
+    font-family: Outfit, Cairo, sans-serif;
+    min-height: 100vh;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  img { display: block; max-width: 100%; }
+
+  .studio {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 36px 28px 80px;
+  }
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .kicker {
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--studio-dim);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 500;
+    font-size: 40px;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -.02em;
+  }
+  .lede {
+    max-width: 460px;
+    margin: 10px 0 0;
+    color: var(--studio-dim);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .lang {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    flex: none;
+  }
+  .lang button {
+    background: transparent;
+    border: 0;
+    padding: 8px 16px;
+    color: var(--studio-dim);
+  }
+  .lang button.on {
+    background: #eceae4;
+    color: #141414;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 1080px) {
+    .row { grid-template-columns: 1fr; max-width: 420px; }
+  }
+
+  .col h2 {
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 500;
+    font-size: 28px;
+    margin: 0 0 4px;
+  }
+  .intent {
+    margin: 0 0 16px;
+    color: var(--studio-dim);
+    font-size: 13px;
+    line-height: 1.45;
+    min-height: 38px;
+  }
+  .pick {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #d7c4a3;
+  }
+
+  .device {
+    width: 100%;
+    height: 740px;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,.12);
+  }
+  .panel { display: none; height: 100%; overflow: auto; }
+  .device[data-screen="home"] .panel-home,
+  .device[data-screen="session"] .panel-session,
+  .device[data-screen="domain"] .panel-domain { display: flex; flex-direction: column; }
+  .panel::-webkit-scrollbar { width: 0; }
+
+  body[data-lang="ar"] .en { display: none !important; }
+  body[data-lang="en"] .ar { display: none !important; }
+  body[data-lang="ar"] .device { direction: rtl; }
+  body[data-lang="en"] .device { direction: ltr; }
+
+  .back {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 13px;
+    letter-spacing: .04em;
+    opacity: .7;
+  }
+
+  /* ——— DUSK ——— */
+  .dusk {
+    background: #101114;
+    color: #f4f0e8;
+    font-family: Cairo, Outfit, sans-serif;
+  }
+  .dusk .pad { padding: 26px 22px 22px; }
+  .dusk .brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: Outfit, sans-serif;
+    font-size: 12px;
+    letter-spacing: .28em;
+    font-weight: 480;
+  }
+  .dusk .brand span { opacity: .45; letter-spacing: .08em; }
+  .dusk .greet {
+    margin: 36px 0 0;
+    font-size: 13px;
+    opacity: .55;
+  }
+  .dusk h3 {
+    font-family: "Cormorant Garamond", Cairo, serif;
+    font-weight: 500;
+    font-size: 46px;
+    line-height: .95;
+    margin: 8px 0 0;
+    letter-spacing: -.02em;
+  }
+  body[data-lang="ar"] .dusk h3 { font-family: Cairo, serif; font-weight: 600; font-size: 34px; line-height: 1.25; }
+  .dusk .sub {
+    margin: 14px 0 0;
+    max-width: 26em;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: rgba(244,240,232,.68);
+  }
+  .dusk .go {
+    margin-top: 22px;
+    width: 100%;
+    height: 52px;
+    border: 0;
+    border-radius: 14px;
+    background: #f4f0e8;
+    color: #16171b;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .dusk .meta {
+    display: flex;
+    gap: 18px;
+    margin-top: 14px;
+    font-family: Outfit, sans-serif;
+    font-size: 12px;
+    letter-spacing: .04em;
+    color: rgba(244,240,232,.45);
+  }
+  .dusk .family {
+    margin-top: auto;
+    padding-top: 28px;
+  }
+  .dusk .family-label {
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    opacity: .4;
+    margin-bottom: 12px;
+    font-family: Outfit, sans-serif;
+  }
+  .cast {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 8px;
+  }
+  .cast button {
+    background: none;
+    border: 0;
+    padding: 0;
+    text-align: center;
+  }
+  .cast img {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 6px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center 15%;
+    background: #1c1e24;
+  }
+  .cast b { display: block; font-size: 13px; font-weight: 600; }
+  .cast small { display: block; font-size: 11px; opacity: .45; margin-top: 1px; }
+
+  .dusk .panel-session, .dusk .panel-domain { padding: 22px; gap: 0; }
+  .dusk .session-card {
+    margin-top: 28px;
+    background: #f4f0e8;
+    color: #1a1c22;
+    border-radius: 18px;
+    padding: 22px 20px 8px;
+  }
+  .dusk .session-card .who {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .dusk .session-card img {
+    width: 48px; height: 48px; border-radius: 50%;
+    object-fit: cover; object-position: center 15%;
+  }
+  .dusk .session-card .who b { display: block; font-size: 15px; }
+  .dusk .session-card .who small { opacity: .55; font-size: 12px; }
+  .round {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(26,28,34,.1);
+    background: none;
+    border-left: 0; border-right: 0; border-bottom: 0;
+    width: 100%;
+    text-align: inherit;
+  }
+  .round b { font-size: 15px; font-weight: 600; }
+  .round small { display: block; opacity: .5; font-size: 12px; margin-top: 2px; }
+  .round em { font-style: normal; font-family: Outfit, sans-serif; font-size: 12px; opacity: .45; flex: none; }
+  .dusk .go.ink { margin: 18px 0 8px; background: #1a1c22; color: #f4f0e8; }
+
+  /* ——— ICE ——— */
+  .ice {
+    background: #0c1218;
+    color: #e7eef6;
+    font-family: Outfit, Cairo, sans-serif;
+  }
+  .ice .pad { padding: 22px 20px 18px; height: 100%; }
+  .ice .brand {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; letter-spacing: .22em; font-weight: 560;
+  }
+  .ice .brand i { font-style: normal; color: #8eb4ff; letter-spacing: 0; font-size: 12px; }
+  .ice .plate {
+    margin-top: 28px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 22px 18px 18px;
+    background: rgba(255,255,255,.03);
+  }
+  .ice .eyebrow {
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #8eb4ff;
+  }
+  .ice h3 {
+    font-weight: 480;
+    font-size: 32px;
+    line-height: 1.05;
+    margin: 8px 0 0;
+    letter-spacing: -.03em;
+  }
+  body[data-lang="ar"] .ice h3 { font-family: Cairo, sans-serif; font-weight: 600; font-size: 28px; letter-spacing: 0; }
+  .ice .sub { margin: 10px 0 0; color: rgba(231,238,246,.62); font-size: 14px; line-height: 1.5; }
+  .ice .go {
+    margin-top: 18px;
+    height: 48px;
+    width: 100%;
+    border-radius: 999px;
+    border: 0;
+    background: #8eb4ff;
+    color: #0c1218;
+    font-weight: 560;
+  }
+  .ice .list { margin-top: 22px; display: flex; flex-direction: column; }
+  .ice .list button, .ice .domain-list button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: none;
+    border: 0;
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 12px 0;
+    text-align: inherit;
+    width: 100%;
+  }
+  .ice .list img, .ice .domain-list img {
+    width: 42px; height: 42px; border-radius: 50%;
+    object-fit: cover; object-position: center 15%; flex: none;
+  }
+  .ice .list b, .ice .domain-list b { display: block; font-size: 14px; font-weight: 560; }
+  .ice .list small, .ice .domain-list small { color: rgba(231,238,246,.45); font-size: 12px; }
+  .ice .list em, .ice .domain-list em {
+    margin-inline-start: auto;
+    font-style: normal;
+    font-size: 12px;
+    color: rgba(231,238,246,.35);
+    flex: none;
+  }
+  .ice .panel-session, .ice .panel-domain { padding: 22px 20px; }
+  .ice .quiet { margin: 22px 0 8px; font-size: 13px; color: rgba(231,238,246,.5); }
+
+  /* ——— STONE ——— */
+  .stone {
+    background: #e6e1d6;
+    color: #1c1915;
+    font-family: Cairo, Outfit, sans-serif;
+  }
+  .stone .pad { padding: 22px 20px 18px; height: 100%; }
+  .stone .brand {
+    font-family: "Cormorant Garamond", serif;
+    font-size: 22px;
+    letter-spacing: .18em;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .stone .brand span { font-family: Outfit, sans-serif; font-size: 11px; letter-spacing: .14em; opacity: .5; }
+  .stone h3 {
+    font-family: "Cormorant Garamond", Cairo, serif;
+    font-weight: 500;
+    font-size: 52px;
+    line-height: .9;
+    margin: 28px 0 0;
+  }
+  body[data-lang="ar"] .stone h3 {
+    font-family: Cairo, serif;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 1.2;
+  }
+  .stone .sub { margin: 12px 0 0; font-size: 14px; line-height: 1.5; max-width: 24em; }
+  .stone .cast { margin-top: 26px; gap: 16px 10px; }
+  .stone .cast img { width: 84px; height: 84px; border-radius: 18px; object-position: center 10%; }
+  .stone .dock {
+    margin-top: auto;
+    padding-top: 18px;
+  }
+  .stone .go {
+    width: 100%;
+    height: 54px;
+    border: 0;
+    border-radius: 8px;
+    background: #1c1915;
+    color: #f3efe6;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .stone .panel-session, .stone .panel-domain { padding: 22px 20px; background: #e6e1d6; }
+  .stone .round { border-top-color: rgba(28,25,21,.12); }
+  .stone .session-head { margin: 20px 0 8px; }
+  .stone .session-head b { font-size: 22px; display: block; }
+  .stone .session-head small { opacity: .55; }
+
+  .set {
+    margin: 56px 0 8px;
+    font-family: "Cormorant Garamond", serif;
+    font-weight: 500;
+    font-size: 32px;
+  }
+  .set + .intent { margin-bottom: 22px; }
+
+  /* ——— CINEMA ——— */
+  .cinema { background: #090909; color: #f4efe6; font-family: Cairo, Outfit, sans-serif; }
+  .cinema .panel-home { flex-direction: column; height: 100%; }
+  .cinema .poster { height: 292px; overflow: hidden; background: #1a140e; flex: none; }
+  .cinema .poster { height: 340px; }
+  .cinema .poster img { width: 100%; height: 100%; object-fit: cover; object-position: center 82%; }
+  .cinema .pad { padding: 18px 20px 16px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .cinema .brand { font-family: Outfit, sans-serif; letter-spacing: .28em; font-size: 12px; opacity: .7; }
+  .cinema h3 {
+    font-family: "Cormorant Garamond", Cairo, serif;
+    font-weight: 500; font-size: 40px; line-height: 1; margin: 10px 0 0;
+  }
+  body[data-lang="ar"] .cinema h3 { font-family: Cairo, serif; font-weight: 650; font-size: 30px; }
+  .cinema .sub { margin: 8px 0 0; font-size: 14px; line-height: 1.45; color: rgba(244,239,230,.68); }
+  .cinema .go {
+    margin-top: 14px; height: 46px; border: 0; border-radius: 0;
+    background: transparent; color: #f4efe6;
+    border-bottom: 1px solid rgba(244,239,230,.45);
+    text-align: inherit; padding: 0; font-size: 15px; font-weight: 600;
+  }
+  .cinema .strip {
+    display: flex; gap: 10px; margin-top: 16px; overflow: auto;
+  }
+  .cinema .strip button { background: none; border: 0; padding: 0; flex: none; width: 64px; text-align: center; }
+  .cinema .strip img {
+    width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: center 15%; margin: 0 auto 4px;
+  }
+  .cinema .strip b { display: block; font-size: 11px; font-weight: 600; }
+  .cinema .strip small { display: none; }
+  .cinema .panel-session, .cinema .panel-domain { padding: 22px 20px; }
+  .cinema .round { border-top-color: rgba(244,239,230,.14); color: #f4efe6; }
+  .cinema .who { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+  .cinema .who img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; object-position: center 15%; }
+  .cinema .enter {
+    margin-top: 20px; width: 100%; height: 48px; border: 0; background: #f4efe6; color: #111; font-weight: 650;
+  }
+
+  /* ——— MENU ——— */
+  .menu {
+    background: #e7ebf0;
+    color: #14181e;
+    font-family: Outfit, Cairo, sans-serif;
+  }
+  .menu .pad { padding: 22px 22px 18px; height: 100%; display: flex; flex-direction: column; }
+  .menu .brand { font-size: 13px; letter-spacing: .2em; text-transform: uppercase; }
+  .menu .day { margin: 28px 0 0; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .45; }
+  .menu h3 { font-weight: 480; font-size: 36px; letter-spacing: -.03em; margin: 4px 0 0; line-height: 1; }
+  body[data-lang="ar"] .menu h3 { font-family: Cairo, sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0; }
+  .menu .lines { margin-top: 22px; }
+  .menu .line {
+    width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    background: none; border: 0; border-top: 1px solid rgba(20,24,30,.14);
+    padding: 13px 0; text-align: inherit;
+  }
+  .menu .line > span { display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .menu .line b { font-size: 16px; font-weight: 560; }
+  .menu .line small { font-size: 12px; opacity: .45; }
+  .menu .go {
+    margin-top: auto; height: 52px; border: 0; background: #14181e; color: #f4f6f8; font-weight: 560; font-size: 15px;
+  }
+  .menu .panel-session, .menu .panel-domain { padding: 22px; background: #e7ebf0; }
+  .menu .round { border-top-color: rgba(20,24,30,.14); }
+  .menu .session-head { margin: 18px 0 6px; }
+  .menu .session-head b { display: block; font-size: 26px; font-weight: 500; }
+  .menu .session-head small { opacity: .5; }
+
+  /* ——— ARC ——— */
+  .arc { background: #070b12; color: #e8eef8; font-family: Outfit, Cairo, sans-serif; }
+  .arc .pad { padding: 22px 20px 18px; height: 100%; display: flex; flex-direction: column; }
+  .arc .brand { display: flex; justify-content: space-between; letter-spacing: .22em; font-size: 12px; }
+  .arc .brand span { letter-spacing: .04em; color: #d7c08a; }
+  .arc h3 {
+    font-family: "Cormorant Garamond", Cairo, serif;
+    font-weight: 500; font-size: 42px; margin: 26px 0 0; line-height: 1;
+  }
+  body[data-lang="ar"] .arc h3 { font-family: Cairo, serif; font-weight: 650; font-size: 32px; }
+  .arc .rule { height: 1px; background: #d7c08a; width: 36px; margin: 14px 0 16px; border: 0; }
+  .arc .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .arc .pair button {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: 0; padding: 6px 0; text-align: inherit;
+  }
+  .arc .pair img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: center 15%; flex: none; }
+  .arc .pair b { display: block; font-size: 13px; font-weight: 560; }
+  .arc .pair small { display: block; font-size: 11px; color: rgba(232,238,248,.45); }
+  .arc .go {
+    margin-top: auto; height: 48px; border-radius: 999px; border: 1px solid #d7c08a;
+    background: transparent; color: #d7c08a; font-weight: 560;
+  }
+  .arc .panel-session, .arc .panel-domain { padding: 22px 20px; }
+  .arc .round { border-top-color: rgba(215,192,138,.25); color: #e8eef8; }
+  .arc .quiet { margin: 20px 0 8px; color: #d7c08a; font-size: 13px; letter-spacing: .08em; }
+
+  /* ——— MINIMAL ——— */
+  .still, .word, .names {
+    background: #000;
+    color: #f4f0e8;
+    font-family: Cairo, Outfit, sans-serif;
+  }
+  .still .pad, .word .pad, .names .pad {
+    height: 100%;
+    padding: 28px 26px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .mark {
+    width: min(220px, 68%);
+    margin: 0 auto;
+    display: block;
+  }
+  .still .pad { justify-content: center; align-items: center; }
+  .wordmark {
+    width: min(210px, 70%);
+    height: auto;
+    margin: 8px auto 0;
+    display: block;
+  }
+  .still h3, .word h3, .names h3 {
+    font-weight: 500;
+    font-size: 22px;
+    text-align: center;
+    margin: 22px 0 0;
+  }
+  .still .sub, .word .sub {
+    text-align: center;
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: rgba(244,240,232,.55);
+  }
+  .text-go {
+    margin-top: 28px;
+    background: none;
+    border: 0;
+    color: #f4f0e8;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    padding: 8px 0;
+    align-self: center;
+    border-bottom: 1px solid rgba(244,240,232,.4);
+  }
+  .names .wordmark { width: min(160px, 52%); margin-bottom: 28px; }
+  .names .plain { margin-top: 8px; }
+  .names .plain button > span { display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .names .plain button, .word .plain button {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    background: none;
+    border: 0;
+    border-top: 1px solid rgba(244,240,232,.14);
+    padding: 14px 0;
+    text-align: inherit;
+  }
+  .names .plain b, .word .plain b { font-weight: 560; font-size: 16px; }
+  .names .plain small, .word .plain small { font-size: 12px; color: rgba(244,240,232,.4); }
+  .still .panel-session, .word .panel-session, .names .panel-session,
+  .still .panel-domain, .word .panel-domain, .names .panel-domain {
+    padding: 28px 26px;
+    background: #000;
+    color: #f4f0e8;
+  }
+  .still .round, .word .round, .names .round {
+    border-top-color: rgba(244,240,232,.14);
+    color: #f4f0e8;
+  }
+
+  .note {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--studio-dim);
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 640px;
+  }
+</style>
+</head>
+<body data-lang="ar">
+<div class="studio">
+  <header class="top">
+    <div>
+      <p class="kicker">Nayzak · shell prototypes</p>
+      <h1>Six ways in.</h1>
+      <p class="lede">The games stay. These are only the door: a session, the six guardians, and a domain. No index, no scores, no laboratory codes.</p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="btn-ar" class="on">عربي</button>
+      <button type="button" id="btn-en">English</button>
+    </div>
+  </header>
+
+  <div class="row">
+
+    <article class="col">
+      <h2>Dusk</h2>
+      <p class="intent">Dark room, one cream card, brass nowhere except the family. This is the one I would build.</p>
+      <span class="pick">Recommended</span>
+      <div class="device dusk" data-screen="home" style="margin-top:14px">
+        <section class="panel panel-home">
+          <div class="pad" style="display:flex;flex-direction:column;min-height:100%">
+            <div class="brand">NAYZAK <span class="ar">مساء الخير</span><span class="en">Good evening</span></div>
+            <p class="greet"><span class="ar">مع الكابتن نيزك</span><span class="en">With Captain Nayzak</span></p>
+            <h3><span class="ar">جلسة اليوم</span><span class="en">Today’s session</span></h3>
+            <p class="sub"><span class="ar">اثنتا عشرة دقيقة. ثلاثة تمارين، على المستوى الذي وصلت إليه.</span><span class="en">Twelve minutes. Three exercises, set to where you are.</span></p>
+            <button class="go" type="button" data-go="session"><span class="ar">ابدأ الجلسة</span><span class="en">Begin</span></button>
+            <div class="meta"><span dir="ltr">12 min</span><span class="ar">٣ تمارين</span><span class="en">3 exercises</span></div>
+            <div class="family">
+              <div class="family-label"><span class="ar">الحراس</span><span class="en">The guardians</span></div>
+              <div class="cast" data-cast></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <div class="session-card">
+            <div class="who">
+              <img src="Assets/brand/characters/father-coach-avatar.jpg" alt="">
+              <div>
+                <b><span class="ar">الكابتن نيزك</span><span class="en">Captain Nayzak</span></b>
+                <small><span class="ar">جلسة اليوم جاهزة</span><span class="en">Today’s session is ready</span></small>
+              </div>
+            </div>
+            <div data-rounds="session"></div>
+            <button class="go ink" type="button"><span class="ar">ادخل التمرين الأول</span><span class="en">Enter the first exercise</span></button>
+          </div>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">الحراس</span><span class="en">Guardians</span></button>
+          <div class="session-card" style="margin-top:22px">
+            <div class="who">
+              <img data-face alt="">
+              <div>
+                <b data-name></b>
+                <small data-role></small>
+              </div>
+            </div>
+            <div data-rounds="domain"></div>
+          </div>
+        </section>
+      </div>
+    </article>
+
+    <article class="col">
+      <h2>Ice</h2>
+      <p class="intent">Cool, precise, almost silent. One blue, used once. A list instead of a dashboard.</p>
+      <div class="device ice" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad">
+            <div class="brand">NAYZAK <i dir="ltr">12 min</i></div>
+            <div class="plate">
+              <div class="eyebrow"><span class="ar">جلسة اليوم</span><span class="en">Today</span></div>
+              <h3><span class="ar">ثلاثة تمارين، ثم تتوقف.</span><span class="en">Three exercises, then stop.</span></h3>
+              <p class="sub"><span class="ar">الكابتن يختارها من مستواك. لا درجة، ولا مؤشر.</span><span class="en">The captain picks them from your level. No score, no index.</span></p>
+              <button class="go" type="button" data-go="session"><span class="ar">ابدأ</span><span class="en">Begin</span></button>
+            </div>
+            <div class="list" data-cast="row"></div>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p class="quiet"><span class="ar">الكابتن نيزك · ١٢ دقيقة</span><span class="en">Captain Nayzak · 12 min</span></p>
+          <div class="domain-list" data-rounds="session"></div>
+          <button class="go" type="button" style="margin-top:18px"><span class="ar">التمرين الأول</span><span class="en">First exercise</span></button>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p class="quiet" data-name></p>
+          <div class="domain-list" data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="col">
+      <h2>Stone</h2>
+      <p class="intent">Daylight. The family is the page. Type is large, the button is the only dark thing.</p>
+      <div class="device stone" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad" style="display:flex;flex-direction:column;min-height:100%">
+            <div class="brand">Nayzak <span class="ar">اليوم</span><span class="en">Today</span></div>
+            <h3><span class="ar">أهل البيت</span><span class="en">The house</span></h3>
+            <p class="sub"><span class="ar">ستة حراس. جلسة واحدة كل يوم.</span><span class="en">Six guardians. One session a day.</span></p>
+            <div class="cast" data-cast></div>
+            <div class="dock">
+              <button class="go" type="button" data-go="session"><span class="ar">جلسة اليوم · ١٢ د</span><span class="en">Today’s session · 12m</span></button>
+            </div>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <div class="session-head">
+            <b><span class="ar">جلسة اليوم</span><span class="en">Today’s session</span></b>
+            <small><span class="ar">الكابتن نيزك أعدّها لمستواك</span><span class="en">Set by Captain Nayzak for your level</span></small>
+          </div>
+          <div data-rounds="session"></div>
+          <button class="go" type="button" style="margin-top:22px"><span class="ar">ادخل</span><span class="en">Enter</span></button>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <div class="session-head">
+            <b data-name></b>
+            <small data-role></small>
+          </div>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <h2 class="set" id="more">Another three</h2>
+  <p class="intent">A poster, a menu, and a night chart. Same door: a session, six guardians, a domain.</p>
+  <div class="row">
+
+    <article class="col">
+      <h2>Cinema</h2>
+      <p class="intent">The captain fills the frame. The session is a line under the picture, and the family is a film strip.</p>
+      <div class="device cinema" data-screen="home">
+        <section class="panel panel-home">
+          <div class="poster"><img src="Assets/brand/characters/father-coach-portrait.jpg" alt=""></div>
+          <div class="pad">
+            <div class="brand">NAYZAK</div>
+            <h3><span class="ar">جلسة اليوم</span><span class="en">Tonight</span></h3>
+            <p class="sub"><span class="ar">اثنتا عشرة دقيقة مع الكابتن. ثم تتوقف.</span><span class="en">Twelve minutes with the captain. Then you stop.</span></p>
+            <button class="go" type="button" data-go="session"><span class="ar">ابدأ ←</span><span class="en">Begin →</span></button>
+            <div class="strip" data-cast="strip"></div>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <div class="who">
+            <img src="Assets/brand/characters/father-coach-avatar.jpg" alt="">
+            <div><b><span class="ar">الكابتن نيزك</span><span class="en">Captain Nayzak</span></b></div>
+          </div>
+          <div data-rounds="session"></div>
+          <button class="enter" type="button"><span class="ar">التمرين الأول</span><span class="en">First exercise</span></button>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <div class="who"><img data-face alt=""><div><b data-name></b><small data-role></small></div></div>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="col">
+      <h2>Menu</h2>
+      <p class="intent">No portraits on the door. Six lines, like a card in a quiet room. Cool paper, black type.</p>
+      <div class="device menu" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad">
+            <div class="brand">Nayzak</div>
+            <p class="day"><span class="ar">اليوم</span><span class="en">Today</span></p>
+            <h3><span class="ar">القائمة</span><span class="en">The card</span></h3>
+            <div class="lines" data-cast="menu"></div>
+            <button class="go" type="button" data-go="session"><span class="ar">جلسة اليوم · ١٢ د</span><span class="en">Today’s session · 12m</span></button>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">القائمة</span><span class="en">The card</span></button>
+          <div class="session-head">
+            <b><span class="ar">ثلاثة</span><span class="en">Three</span></b>
+            <small><span class="ar">يعدّها الكابتن، ثم تتوقف</span><span class="en">The captain sets them, then you stop</span></small>
+          </div>
+          <div data-rounds="session"></div>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">القائمة</span><span class="en">The card</span></button>
+          <div class="session-head"><b data-name></b><small data-role></small></div>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="col">
+      <h2>Arc</h2>
+      <p class="intent">A night chart with no numbers on it. One brass line. The six names, then the session.</p>
+      <div class="device arc" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad">
+            <div class="brand">NAYZAK <span dir="ltr">12 min</span></div>
+            <h3><span class="ar">الستة</span><span class="en">The six</span></h3>
+            <hr class="rule">
+            <div class="pair" data-cast="arc"></div>
+            <button class="go" type="button" data-go="session"><span class="ar">جلسة اليوم</span><span class="en">Today’s session</span></button>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p class="quiet"><span class="ar">الكابتن نيزك</span><span class="en">Captain Nayzak</span></p>
+          <div data-rounds="session"></div>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p class="quiet" data-name></p>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <h2 class="set" id="minimal">Minimal</h2>
+  <p class="intent">The logo, one line, and a way in. No cards, no portraits, no color besides the mark itself.</p>
+  <div class="row">
+
+    <article class="col">
+      <h2>Still</h2>
+      <p class="intent">The wreath, centered. One sentence under it. The button is a line of type.</p>
+      <div class="device still" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad">
+            <img class="mark" src="Assets/brand/nayzak-ai-logo.jpg" alt="Nayzak AI">
+            <h3><span class="ar">جلسة اليوم</span><span class="en">Today</span></h3>
+            <p class="sub"><span class="ar">اثنتا عشرة دقيقة</span><span class="en">Twelve minutes</span></p>
+            <button class="text-go" type="button" data-go="session"><span class="ar">ابدأ</span><span class="en">Begin</span></button>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <img class="wordmark" src="Assets/brand/nayzak-ai-wordmark.png" alt="">
+          <div class="plain" data-rounds="session" style="margin-top:28px"></div>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p data-name style="margin-top:24px"></p>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="col">
+      <h2>Word</h2>
+      <p class="intent">Only the wordmark. Under it, the three exercises of today and nothing else.</p>
+      <div class="device word" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad">
+            <img class="wordmark" src="Assets/brand/nayzak-ai-wordmark.png" alt="Nayzak AI">
+            <h3><span class="ar">اليوم</span><span class="en">Today</span></h3>
+            <div class="plain" data-rounds="session" style="margin-top:28px"></div>
+            <button class="text-go" type="button" data-go="session" style="margin-top:auto"><span class="ar">ادخل</span><span class="en">Enter</span></button>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <img class="wordmark" src="Assets/brand/nayzak-ai-wordmark.png" alt="">
+          <div class="plain" data-rounds="session" style="margin-top:28px"></div>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p data-name style="margin-top:24px"></p>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="col">
+      <h2>Names</h2>
+      <p class="intent">A small wordmark, then the six names as text. The domain sits quietly on the other side of the line.</p>
+      <div class="device names" data-screen="home">
+        <section class="panel panel-home">
+          <div class="pad">
+            <img class="wordmark" src="Assets/brand/nayzak-ai-wordmark.png" alt="Nayzak AI">
+            <div class="plain" data-cast="menu"></div>
+            <button class="text-go" type="button" data-go="session" style="margin-top:auto"><span class="ar">جلسة اليوم</span><span class="en">Today’s session</span></button>
+          </div>
+        </section>
+        <section class="panel panel-session">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <img class="wordmark" src="Assets/brand/nayzak-ai-wordmark.png" alt="">
+          <div class="plain" data-rounds="session" style="margin-top:28px"></div>
+        </section>
+        <section class="panel panel-domain">
+          <button class="back" type="button" data-go="home"><span class="ar">رجوع</span><span class="en">Back</span></button>
+          <p data-name style="margin-top:24px"></p>
+          <div data-rounds="domain"></div>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <p class="note">Tap a guardian to open that domain. Tap the session button to see the three exercises. The first exercise does not launch a game — these frames stop at the door.</p>
+</div>
+
+<script>
+const CAST = [
+  { id: 'attention', ar: 'زيد', en: 'Zayd', roleAr: 'الانتباه', roleEn: 'Attention', img: 'Assets/brand/characters/toddler-attention-avatar.jpg',
+    games: [{ ar: 'مهمة الإلغاء', en: 'Cancellation', t: '4:00' }, { ar: 'تتبّع الأهداف', en: 'Target tracking', t: '4:00' }, { ar: 'الرسو', en: 'Docking', t: '4:00' }] },
+  { id: 'speed', ar: 'ريما', en: 'Rima', roleAr: 'السرعة', roleEn: 'Speed', img: 'Assets/brand/characters/teen-speed-avatar.jpg',
+    games: [{ ar: 'المطابقة السريعة', en: 'Speed match', t: '3:00' }, { ar: 'بوابات الحساب', en: 'Math gates', t: '4:00' }, { ar: 'الاعتراض', en: 'Intercept', t: '5:00' }] },
+  { id: 'memory', ar: 'سامي', en: 'Sami', roleAr: 'الذاكرة', roleEn: 'Memory', img: 'Assets/brand/characters/boy-memory-avatar.jpg',
+    games: [{ ar: 'وقت القصة', en: 'Story time', t: '5:00' }, { ar: 'تتبّع الفئات', en: 'Keep track', t: '4:00' }, { ar: 'مطابقة المواقع', en: 'Pair match', t: '4:00' }] },
+  { id: 'language', ar: 'ليان', en: 'Layan', roleAr: 'اللغة', roleEn: 'Language', img: 'Assets/brand/characters/girl-language-avatar.jpg',
+    games: [{ ar: 'متاهة الكلمات', en: 'Word maze', t: '4:00' }, { ar: 'روابط الكلمات', en: 'Word links', t: '3:00' }, { ar: 'سلّم المعرفة', en: 'Trivia', t: '4:00' }] },
+  { id: 'reasoning', ar: 'الجد حكيم', en: 'Hakim', roleAr: 'الاستدلال', roleEn: 'Reasoning', img: 'Assets/brand/characters/grandpa-reasoning-avatar.jpg',
+    games: [{ ar: 'هروب القطع', en: 'Block escape', t: '5:00' }, { ar: 'حارس البوابة', en: 'The Gate', t: '4:00' }, { ar: 'التحري', en: 'Detective', t: '4:00' }] },
+  { id: 'flexibility', ar: 'ياسمين', en: 'Yasmin', roleAr: 'المرونة', roleEn: 'Flexibility', img: 'Assets/brand/characters/mother-flexibility-avatar.jpg',
+    games: [{ ar: 'عالم المرآة', en: 'Mirror world', t: '4:00' }, { ar: 'تبديل المهام', en: 'Task switch', t: '4:00' }, { ar: 'رتّبها بطريقة أخرى', en: 'Sort another way', t: '4:00' }] },
+];
+const SESSION = [CAST[0].games[0], CAST[2].games[0], CAST[4].games[1]].map((g, i) => ({
+  ...g,
+  whoAr: [CAST[0].ar, CAST[2].ar, CAST[4].ar][i],
+  whoEn: [CAST[0].en, CAST[2].en, CAST[4].en][i],
+}));
+
+function lang() { return document.body.dataset.lang; }
+function t(ar, en) { return lang() === 'ar' ? ar : en; }
+
+function roundHtml(g, withWho) {
+  const name = t(g.ar, g.en);
+  const sub = withWho ? t(g.whoAr, g.whoEn) : '';
+  return `<button class="round" type="button"><span><b>${name}</b>${sub ? `<small>${sub}</small>` : ''}</span><em>${g.t}</em></button>`;
+}
+
+function fillCast(root) {
+  const kind = root.dataset.cast;
+  root.innerHTML = CAST.map(c => {
+    const name = `<b><span class="ar">${c.ar}</span><span class="en">${c.en}</span></b><small><span class="ar">${c.roleAr}</span><span class="en">${c.roleEn}</span></small>`;
+    if (kind === 'row') {
+      return `<button type="button" data-go="domain" data-who="${c.id}"><img src="${c.img}" alt=""><span>${name}</span></button>`;
+    }
+    if (kind === 'menu') {
+      return `<button class="line" type="button" data-go="domain" data-who="${c.id}"><span>${name}</span></button>`;
+    }
+    if (kind === 'strip' || kind === 'arc') {
+      return `<button type="button" data-go="domain" data-who="${c.id}"><img src="${c.img}" alt=""><span>${name}</span></button>`;
+    }
+    return `<button type="button" data-go="domain" data-who="${c.id}"><img src="${c.img}" alt="">${name}</button>`;
+  }).join('');
+}
+
+function fillRounds(device) {
+  device.querySelectorAll('[data-rounds="session"]').forEach(el => {
+    el.innerHTML = SESSION.map(g => roundHtml(g, true)).join('');
+  });
+  const who = device.dataset.who;
+  const person = CAST.find(c => c.id === who) || CAST[0];
+  device.querySelectorAll('[data-name]').forEach(el => { el.textContent = t(person.ar, person.en); });
+  device.querySelectorAll('[data-role]').forEach(el => { el.textContent = t(person.roleAr, person.roleEn); });
+  device.querySelectorAll('[data-face]').forEach(el => { el.src = person.img; });
+  device.querySelectorAll('[data-rounds="domain"]').forEach(el => {
+    el.innerHTML = person.games.map(g => roundHtml(g, false)).join('');
+  });
+}
+
+document.querySelectorAll('[data-cast]').forEach(fillCast);
+
+document.body.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-go]');
+  if (!btn) return;
+  const device = btn.closest('.device');
+  if (btn.dataset.who) device.dataset.who = btn.dataset.who;
+  device.dataset.screen = btn.dataset.go;
+  fillRounds(device);
+  device.querySelector('.panel-' + btn.dataset.go).scrollTop = 0;
+});
+
+function setLang(next) {
+  document.body.dataset.lang = next;
+  document.getElementById('btn-ar').classList.toggle('on', next === 'ar');
+  document.getElementById('btn-en').classList.toggle('on', next === 'en');
+  document.querySelectorAll('.device').forEach(fillRounds);
+}
+document.getElementById('btn-ar').onclick = () => setLang('ar');
+document.getElementById('btn-en').onclick = () => setLang('en');
+document.querySelectorAll('.device').forEach(d => { d.dataset.who = 'attention'; fillRounds(d); });
+</script>
+</body>
+</html>

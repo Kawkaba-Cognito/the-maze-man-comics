@@ -1,1 +1,0 @@
-import{C as e,w as t}from"./index-3xxnhJlE.js";var n=t(e());function r(e,t,r){let i=r.trialActive;return{trialMode:i,displayState:i?r.trialState:e,runTrialOrSet:(0,n.useCallback)((e,n)=>{i?r.applyTrialAction(e):t(n)},[i,r,t])}}export{r as t};

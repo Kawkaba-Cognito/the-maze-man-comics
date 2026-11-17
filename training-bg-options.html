@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Hub — Minimalist Background Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,700;1,700&family=Aref+Ruqaa:wght@700&family=Cairo:wght@700;800;900&family=Cinzel:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Marcellus&family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=Space+Mono:wght@400;700&family=Syne:wght@700;800&family=Tajawal:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+    }
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .font-marcellus { font-family: 'Marcellus', serif; }
+    .font-syne { font-family: 'Syne', sans-serif; }
+    .font-cormorant { font-family: 'Cormorant Garamond', serif; }
+    .font-grotesk { font-family: 'Space Grotesk', 'Outfit', sans-serif; }
+    .font-amiri { font-family: 'Amiri', serif; }
+    .font-ruqaa { font-family: 'Aref Ruqaa', serif; }
+    .font-cairo { font-family: 'Cairo', sans-serif; }
+    .font-tajawal { font-family: 'Tajawal', sans-serif; }
+
+    .stage-container {
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bg-layer {
+      transition: background-image 0.4s ease, opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-stone-950 text-stone-100 min-h-screen p-4 sm:p-6 antialiased">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <header class="bg-stone-900/90 border border-stone-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-semibold tracking-wider uppercase">
+              Brand-New Unique Designs
+            </span>
+            <span class="px-3 py-1 bg-stone-800 text-stone-300 border border-stone-700 rounded-full text-xs">
+              Minimalist & Clean Collection
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold mt-2.5 serif-title tracking-wider text-amber-100">
+            Training Hub — Header Enhancement Studio
+          </h1>
+          <p class="text-stone-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Keeping the current authentic beige background, explore stylistic, artistic, and premium treatments for the <strong>“Cognitive Training”</strong> header.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Controls Bar -->
+    <div class="bg-stone-900 border border-stone-800 rounded-2xl p-4 space-y-3">
+      <!-- Row 1: Header Design Focus (G2 vs G3) -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs uppercase tracking-wider text-amber-400 font-bold mr-1">📐 Selected Arc Design:</span>
+          <button onclick="setHeader('G2')" id="btn-G2" class="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-stone-950 shadow-lg transition">
+            G2: Art Deco Winged Chevron
+          </button>
+          <button onclick="setHeader('G3')" id="btn-G3" class="px-4 py-2 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition">
+            G3: Vault Dome & Horizon
+          </button>
+          <span class="text-stone-600 mx-1">|</span>
+          <button onclick="setHeader('E1')" id="btn-E1" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-400 hover:text-stone-200">
+            E1: Plaque
+          </button>
+          <button onclick="setHeader('H1')" id="btn-H1" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-stone-800 text-stone-400 hover:text-stone-200">
+            Hybrid
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Language Toggle -->
+          <div class="flex items-center bg-stone-950 p-1 rounded-xl border border-stone-800 text-xs">
+            <button onclick="setLang('en')" id="btn-lang-en" class="px-2.5 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              EN
+            </button>
+            <button onclick="setLang('ar')" id="btn-lang-ar" class="px-2.5 py-1 rounded-lg font-bold text-stone-400 hover:text-stone-200">
+              عر
+            </button>
+          </div>
+
+          <!-- Viewport Switcher -->
+          <div class="flex items-center bg-stone-950 p-1 rounded-xl border border-stone-800">
+            <button onclick="setViewport('desktop')" id="vp-desktop" class="px-3 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Desktop
+            </button>
+            <button onclick="setViewport('mobile')" id="vp-mobile" class="px-3 py-1 rounded-lg text-xs font-medium text-stone-400 hover:text-stone-200">
+              Mobile
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Typography & Font Selector -->
+      <div class="pt-2 border-t border-stone-800/80 flex flex-wrap items-center gap-1.5">
+        <span class="text-xs uppercase tracking-wider text-amber-400 font-bold mr-1">🔤 Font Styles:</span>
+        <button onclick="setFont('cinzel')" id="btn-font-cinzel" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition">
+          1: Cinzel (Imperial Roman)
+        </button>
+        <button onclick="setFont('marcellus')" id="btn-font-marcellus" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition">
+          2: Marcellus (Flared Lapidary)
+        </button>
+        <button onclick="setFont('syne')" id="btn-font-syne" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 text-stone-950 shadow-lg transition">
+          3: Syne (Art Deco Bold)
+        </button>
+        <button onclick="setFont('cormorant')" id="btn-font-cormorant" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition">
+          4: Cormorant (Literary Serif)
+        </button>
+        <button onclick="setFont('grotesk')" id="btn-font-grotesk" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition">
+          5: Space Grotesk (Wide Minimal)
+        </button>
+      </div>
+
+      <!-- Row 3: Background & Ground Shade -->
+      <div class="pt-2 border-t border-stone-800/80 flex flex-wrap items-center justify-between text-xs text-stone-400 gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-stone-400">Background:</span>
+          <button onclick="setBg('E')" id="btn-E" class="px-2.5 py-1 rounded-lg bg-stone-800 text-amber-300 border border-amber-500/30">
+            Current Pure Beige (Unmodified)
+          </button>
+          <button onclick="setBg('A')" id="btn-A" class="px-2.5 py-1 rounded-lg bg-stone-800 text-stone-300 hover:bg-stone-700">
+            + Astrolabe Overlay
+          </button>
+          <button onclick="setBg('B')" id="btn-B" class="px-2.5 py-1 rounded-lg bg-stone-800 text-stone-300 hover:bg-stone-700">
+            + Labyrinth Overlay
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span>Ground Shade:</span>
+          <button onclick="setGround('#dcd3c2')" id="btn-ground-1" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Bone Beige
+          </button>
+          <button onclick="setGround('#f4eedb')" id="btn-ground-2" class="px-2 py-0.5 rounded text-stone-400 hover:text-stone-200">
+            Warm Linen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Header Description -->
+    <div id="optionCard" class="bg-stone-900/60 border border-stone-800 rounded-xl p-4 text-xs sm:text-sm text-stone-300 flex items-start gap-3">
+      <div class="text-amber-400 text-base mt-0.5">✦</div>
+      <div>
+        <strong id="optionTitle" class="text-amber-200 text-sm font-semibold">G2: Art Deco Winged Chevron · Syne (Art Deco Bold)</strong>
+        <p id="optionDesc" class="text-stone-300 text-xs mt-0.5 leading-relaxed">
+          Symmetrical architectural stepped wing rays sweeping outward below the title, with dual-tone burnished brass gradients and avant-garde bold geometric display typography.
+        </p>
+      </div>
+    </div>
+
+    <!-- Live Stage Simulator -->
+    <div class="w-full flex justify-center py-2">
+      <div id="stageFrame" class="stage-container relative overflow-hidden rounded-2xl border-2 border-stone-400/50 shadow-2xl bg-[#dcd3c2]" style="width: 100%; max-width: 960px; height: 560px;">
+        
+        <!-- The Background Layer -->
+        <div id="bgLayer" class="bg-layer absolute inset-0 bg-contain bg-center bg-no-repeat" style="background-image: none; display: none; opacity: 0.75;"></div>
+
+        <!-- Hub Foreground Elements Simulator -->
+        <div class="absolute inset-0 flex flex-col items-center justify-between p-6 pointer-events-none">
+          
+          <!-- Header Bar (Dynamic) -->
+          <div id="headerContainer" class="text-center pt-2 w-full flex flex-col items-center justify-center">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Central Astrolabe & Domains Map -->
+          <div class="relative w-full max-w-[580px] h-[340px] flex items-center justify-center my-auto">
+            
+            <!-- SVG Constellation Spoke Lines -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 580 340">
+              <ellipse cx="290" cy="170" rx="230" ry="110" fill="none" stroke="rgba(180, 140, 70, 0.40)" stroke-width="1.1" stroke-dasharray="5 7" />
+              <ellipse cx="290" cy="170" rx="120" ry="60" fill="none" stroke="rgba(180, 140, 70, 0.25)" stroke-width="0.9" stroke-dasharray="2 4" />
+              <line x1="290" y1="50" x2="290" y2="120" stroke="rgba(180, 140, 70, 0.35)" stroke-width="1" />
+              <line x1="290" y1="220" x2="290" y2="290" stroke="rgba(180, 140, 70, 0.35)" stroke-width="1" />
+              <line x1="160" y1="100" x2="240" y2="150" stroke="rgba(180, 140, 70, 0.35)" stroke-width="1" />
+              <line x1="420" y1="100" x2="340" y2="150" stroke="rgba(180, 140, 70, 0.35)" stroke-width="1" />
+              <line x1="160" y1="240" x2="240" y2="190" stroke="rgba(180, 140, 70, 0.35)" stroke-width="1" />
+              <line x1="420" y1="240" x2="340" y2="190" stroke="rgba(180, 140, 70, 0.35)" stroke-width="1" />
+            </svg>
+
+            <!-- Center: Dr. Kawkab Mascot -->
+            <div class="relative z-10 flex flex-col items-center">
+              <div class="relative w-28 h-28 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full bg-amber-400/20 blur-xl"></div>
+                <img src="Assets/characters/kawkab/kawkab-planet.webp" alt="Kawkab" class="w-24 h-24 object-contain drop-shadow-md">
+              </div>
+              <div class="mt-1 px-3 py-1 bg-stone-100/95 border border-stone-300 rounded-xl shadow-sm text-center backdrop-blur-sm">
+                <span class="block text-[8px] uppercase tracking-widest text-stone-500 font-bold">Cognitive Profile</span>
+                <span class="block text-xs font-bold text-stone-900">Assessment</span>
+              </div>
+            </div>
+
+            <!-- Domain 1: Speed (Top Center) -->
+            <div class="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <img src="Assets/domain-art/category-drawings-2026/speed.webp" alt="Speed" class="w-12 h-12 object-contain drop-shadow-sm">
+              </div>
+              <span class="px-2.5 py-0.5 bg-stone-100/90 border border-stone-300 rounded-full text-[10px] font-bold text-stone-800 shadow-sm">Speed</span>
+            </div>
+
+            <!-- Domain 2: Attention (Top Left) -->
+            <div class="absolute top-12 left-12 flex flex-col items-center">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <img src="Assets/domain-art/category-drawings-2026/attention.webp" alt="Attention" class="w-12 h-12 object-contain drop-shadow-sm">
+              </div>
+              <span class="px-2.5 py-0.5 bg-stone-100/90 border border-stone-300 rounded-full text-[10px] font-bold text-stone-800 shadow-sm">Attention</span>
+            </div>
+
+            <!-- Domain 3: Memory (Top Right) -->
+            <div class="absolute top-12 right-12 flex flex-col items-center">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <img src="Assets/domain-art/category-drawings-2026/memory.webp" alt="Memory" class="w-12 h-12 object-contain drop-shadow-sm">
+              </div>
+              <span class="px-2.5 py-0.5 bg-stone-100/90 border border-stone-300 rounded-full text-[10px] font-bold text-stone-800 shadow-sm">Memory</span>
+            </div>
+
+            <!-- Domain 4: Language (Bottom Left) -->
+            <div class="absolute bottom-6 left-12 flex flex-col items-center">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <img src="Assets/domain-art/category-drawings-2026/language.webp" alt="Language" class="w-12 h-12 object-contain drop-shadow-sm">
+              </div>
+              <span class="px-2.5 py-0.5 bg-stone-100/90 border border-stone-300 rounded-full text-[10px] font-bold text-stone-800 shadow-sm">Language</span>
+            </div>
+
+            <!-- Domain 5: Flexibility (Bottom Right) -->
+            <div class="absolute bottom-6 right-12 flex flex-col items-center">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <img src="Assets/domain-art/category-drawings-2026/flexibility.webp" alt="Flexibility" class="w-12 h-12 object-contain drop-shadow-sm">
+              </div>
+              <span class="px-2.5 py-0.5 bg-stone-100/90 border border-stone-300 rounded-full text-[10px] font-bold text-stone-800 shadow-sm">Flexibility</span>
+            </div>
+
+            <!-- Domain 6: Reasoning (Bottom Center) -->
+            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center">
+              <div class="relative w-14 h-14 flex items-center justify-center">
+                <img src="Assets/domain-art/category-drawings-2026/reasoning.webp" alt="Reasoning" class="w-12 h-12 object-contain drop-shadow-sm">
+              </div>
+              <span class="px-2.5 py-0.5 bg-stone-100/90 border border-stone-300 rounded-full text-[10px] font-bold text-stone-800 shadow-sm">Reasoning</span>
+            </div>
+
+          </div>
+
+          <!-- Bottom Button -->
+          <div class="pb-1">
+            <span class="px-5 py-2 bg-stone-100/90 border border-stone-300 rounded-2xl text-xs font-bold text-stone-800 shadow-sm">
+              🧩 Puzzle Studio
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentVp = 'desktop';
+    let currentOption = 'E'; // Default to pure unmodified beige!
+    let currentHeader = 'G2'; // Default to G2 as requested!
+    let currentFont = 'syne'; // Default to Syne (Font 3) as selected!
+    let currentLang = 'en';
+
+    const FONTS = {
+      'cinzel': {
+        name: 'Cinzel (Imperial Roman)',
+        enClass: 'font-cinzel tracking-[0.16em]',
+        arClass: 'font-amiri tracking-[0.04em]',
+        desc: 'Sharp, stone-carved imperial Roman capitals. Authoritative, regal, and classical.'
+      },
+      'marcellus': {
+        name: 'Marcellus (Flared Lapidary)',
+        enClass: 'font-marcellus tracking-[0.14em]',
+        arClass: 'font-ruqaa tracking-[0.03em]',
+        desc: 'Delicate flared terminals with antique humanist proportions. Poetic and scholarly.'
+      },
+      'syne': {
+        name: 'Syne (Art Deco Bold)',
+        enClass: 'font-syne font-extrabold tracking-[0.08em]',
+        arClass: 'font-cairo font-black tracking-[0.02em]',
+        desc: 'Avant-garde geometric display face. Bold, architectural, and striking with Art Deco chevrons.'
+      },
+      'cormorant': {
+        name: 'Cormorant (High-Fashion Serif)',
+        enClass: 'font-cormorant font-bold tracking-[0.15em]',
+        arClass: 'font-amiri font-bold tracking-[0.03em]',
+        desc: 'Razor-thin brackets and high contrast. Poetic, literary, and museum catalog elegance.'
+      },
+      'grotesk': {
+        name: 'Space Grotesk (Wide Minimal Sans)',
+        enClass: 'font-grotesk font-bold tracking-[0.24em]',
+        arClass: 'font-tajawal font-bold tracking-[0.06em]',
+        desc: 'Ultra-wide letter spacing, modern technical minimalism, sleek sci-fi elegance.'
+      }
+    };
+
+    function getActiveFontClass(isAr) {
+      const f = FONTS[currentFont];
+      return isAr ? f.arClass : f.enClass;
+    }
+
+    const HEADERS = {
+      // ── GEOMETRIC ARCS COLLECTION (Primary Focus) ──
+      'G2': {
+        title: 'G2: Art Deco Winged Chevron',
+        desc: 'Symmetrical architectural stepped wing rays that sweep outward below the title, with dual-tone burnished brass gradients and a faceted 3D diamond core anchor.',
+        render: (isAr) => {
+          const fontCls = getActiveFontClass(isAr);
+          return `
+          <div class="flex flex-col items-center">
+            <h2 class="${fontCls} text-xl sm:text-2xl font-bold text-stone-900 drop-shadow-xs transition-all">
+              ${isAr ? 'التدريب المعرفي' : 'COGNITIVE TRAINING'}
+            </h2>
+            <!-- Art Deco Winged Chevron SVG -->
+            <svg class="w-60 sm:w-72 h-6 overflow-visible mt-1" viewBox="0 0 280 24" fill="none">
+              <!-- Stepped chevron left -->
+              <path d="M 20,4 L 120,4 L 135,14" stroke="#a67c2e" stroke-width="1.4"/>
+              <path d="M 40,8 L 120,8 L 132,16" stroke="#c59b27" stroke-width="0.9" opacity="0.7"/>
+              <!-- Stepped chevron right -->
+              <path d="M 260,4 L 160,4 L 145,14" stroke="#a67c2e" stroke-width="1.4"/>
+              <path d="M 240,8 L 160,8 L 148,16" stroke="#c59b27" stroke-width="0.9" opacity="0.7"/>
+              <!-- Center Diamond -->
+              <polygon points="140,8 147,14 140,20 133,14" fill="#c59b27" stroke="#7a5510" stroke-width="0.7"/>
+            </svg>
+            <p class="text-xs text-stone-700 font-medium mt-0.5">
+              ${isAr ? 'اختر مجالًا معرفيًا، أو افتح التقييم للحصول على خط أساس شامل.' : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
+            </p>
+          </div>
+        `;
+        }
+      },
+
+      'G3': {
+        title: 'G3: Celestial Vault Dome & Horizon Arc',
+        desc: 'Symmetrical upper celestial dome curve framing the top of the typography, paired with a lower astronomical horizon curve with coordinates.',
+        render: (isAr) => {
+          const fontCls = getActiveFontClass(isAr);
+          return `
+          <div class="relative flex flex-col items-center px-4">
+            <!-- Upper Sky Dome Arc -->
+            <svg class="w-56 sm:w-64 h-4 overflow-visible" viewBox="0 0 260 16" fill="none">
+              <path d="M 10,14 Q 130,0 250,14" stroke="#c59b27" stroke-width="1.2" opacity="0.75"/>
+              <circle cx="130" cy="7" r="2" fill="#b8860b"/>
+            </svg>
+            <h2 class="${fontCls} text-xl sm:text-2xl font-bold text-stone-900 my-0.5 transition-all">
+              ${isAr ? 'التدريب المعرفي' : 'COGNITIVE TRAINING'}
+            </h2>
+            <!-- Lower Horizon Arc with ticks -->
+            <svg class="w-64 sm:w-72 h-4 overflow-visible" viewBox="0 0 280 16" fill="none">
+              <path d="M 10,2 Q 140,14 270,2" stroke="#b8860b" stroke-width="1.2" opacity="0.8"/>
+              <line x1="70" y1="5" x2="70" y2="8" stroke="#b8860b" stroke-width="1"/>
+              <line x1="140" y1="8" x2="140" y2="12" stroke="#b8860b" stroke-width="1.4"/>
+              <line x1="210" y1="5" x2="210" y2="8" stroke="#b8860b" stroke-width="1"/>
+            </svg>
+            <p class="text-xs text-stone-700 font-medium mt-1">
+              ${isAr ? 'اختر مجالًا معرفيًا، أو افتح التقييم للحصول على خط أساس شامل.' : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
+            </p>
+          </div>
+        `;
+        }
+      },
+
+      // ── EMBOSSED & HYBRID SECONDARY OPTIONS ──
+      'E1': {
+        title: 'E1: Royal Alabaster & Dual Gold Foil Rim',
+        desc: 'Multi-layered relief with 24k gold foil hairline borders, subtle corner rivets, and an antique Latin eyebrow kicker.',
+        render: (isAr) => {
+          const fontCls = getActiveFontClass(isAr);
+          return `
+          <div class="inline-flex flex-col items-center px-7 py-2.5 rounded-2xl relative shadow-md"
+               style="background: linear-gradient(180deg, rgba(255,253,248,0.96) 0%, rgba(242,236,224,0.94) 100%);
+                      border: 1px solid rgba(184, 134, 11, 0.45);
+                      box-shadow: 0 4px 18px rgba(45,35,20,0.08), inset 0 1px 0 rgba(255,255,255,0.9);">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 shadow-xs"></span>
+              <span class="text-[9px] uppercase tracking-[0.25em] font-bold text-amber-900/80 font-mono">
+                ${isAr ? 'أطلس التدريب المعرفي · ٦ مجالات' : 'ATLAS COGNITIVUS · 6 DOMAINS'}
+              </span>
+              <span class="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 shadow-xs"></span>
+            </div>
+            <h2 class="${fontCls} text-xl sm:text-2xl font-bold text-stone-900 flex items-center gap-2.5">
+              ${isAr ? 'التدريب المعرفي' : 'COGNITIVE TRAINING'}
+            </h2>
+            <div class="w-full flex items-center justify-center gap-2 mt-1">
+              <div class="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-700/30 to-amber-700/60"></div>
+              <span class="text-[9px] text-amber-800 tracking-wider font-serif italic">${isAr ? 'المركز المعرفي الرئيسي' : 'NEURAL ARCHITECTURE'}</span>
+              <div class="h-[1px] flex-1 bg-gradient-to-l from-transparent via-amber-700/30 to-amber-700/60"></div>
+            </div>
+          </div>
+          <p class="text-xs text-stone-700 font-medium mt-1.5">
+            ${isAr ? 'اختر مجالًا معرفيًا، أو افتح التقييم للحصول على خط أساس شامل.' : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
+          </p>
+        `;
+        }
+      },
+
+      'H1': {
+        title: '✦ Hybrid: Royal Plaque + Geometric Wing Arcs',
+        desc: 'Combines the tactile beveled bone cartouche with sweeping architectural gold hairline arcs on each side.',
+        render: (isAr) => {
+          const fontCls = getActiveFontClass(isAr);
+          return `
+          <div class="flex items-center justify-center gap-2 sm:gap-4">
+            <svg class="w-10 sm:w-20 h-8 overflow-visible" viewBox="0 0 80 32" fill="none">
+              <path d="M 5,16 Q 40,8 75,16" stroke="#b8860b" stroke-width="1.2" opacity="0.75"/>
+              <path d="M 15,22 Q 45,14 75,22" stroke="#c59b27" stroke-width="0.8" stroke-dasharray="3 3" opacity="0.55"/>
+              <circle cx="5" cy="16" r="2" fill="#b8860b"/>
+            </svg>
+            <div class="inline-flex flex-col items-center px-6 py-2 rounded-2xl relative shadow-md"
+                 style="background: linear-gradient(180deg, rgba(255,253,248,0.96) 0%, rgba(242,236,224,0.94) 100%);
+                        border: 1px solid rgba(184, 134, 11, 0.5);
+                        box-shadow: 0 4px 16px rgba(45,35,20,0.08), inset 0 1px 0 rgba(255,255,255,0.95);">
+              <div class="text-[8px] uppercase tracking-[0.25em] font-bold text-amber-900/80 font-mono mb-0.5">
+                ${isAr ? 'أطلس العقل' : 'NEURAL ATLAS'}
+              </div>
+              <h2 class="${fontCls} text-lg sm:text-xl font-bold text-stone-900">
+                ${isAr ? 'التدريب المعرفي' : 'COGNITIVE TRAINING'}
+              </h2>
+            </div>
+            <svg class="w-10 sm:w-20 h-8 overflow-visible" viewBox="0 0 80 32" fill="none">
+              <path d="M 5,16 Q 40,8 75,16" stroke="#b8860b" stroke-width="1.2" opacity="0.75"/>
+              <path d="M 5,22 Q 35,14 65,22" stroke="#c59b27" stroke-width="0.8" stroke-dasharray="3 3" opacity="0.55"/>
+              <circle cx="75" cy="16" r="2" fill="#b8860b"/>
+            </svg>
+          </div>
+          <p class="text-xs text-stone-700 font-medium mt-1.5">
+            ${isAr ? 'اختر مجالًا معرفيًا، أو افتح التقييم للحصول على خط أساس شامل.' : 'Select a cognitive domain, or open Assessment for a complete baseline.'}
+          </p>
+        `;
+        }
+      }
+    };
+
+    const OVERLAYS = {
+      'A': 'Assets/overlays/overlay-astrolabe.svg',
+      'B': 'Assets/overlays/overlay-labyrinth.svg',
+      'E': ''
+    };
+
+    function setHeader(id) {
+      currentHeader = id;
+      ['G2', 'G3', 'E1', 'H1'].forEach(btnId => {
+        const btn = document.getElementById('btn-' + btnId);
+        if (btn) {
+          if (btnId === id) {
+            btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-stone-950 shadow-lg transition';
+          } else {
+            btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition';
+          }
+        }
+      });
+      updateInfo();
+      renderActiveHeader();
+    }
+
+    function setFont(fontKey) {
+      currentFont = fontKey;
+      ['cinzel', 'marcellus', 'syne', 'cormorant', 'grotesk'].forEach(key => {
+        const btn = document.getElementById('btn-font-' + key);
+        if (btn) {
+          if (key === fontKey) {
+            btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 text-stone-950 shadow-lg transition';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 text-stone-300 hover:bg-stone-700 transition';
+          }
+        }
+      });
+      updateInfo();
+      renderActiveHeader();
+    }
+
+    function updateInfo() {
+      const headerInfo = HEADERS[currentHeader] || HEADERS['G2'];
+      const fontInfo = FONTS[currentFont] || FONTS['cinzel'];
+      document.getElementById('optionTitle').textContent = `${headerInfo.title} · ${fontInfo.name}`;
+      document.getElementById('optionDesc').textContent = `${headerInfo.desc} Typography: ${fontInfo.desc}`;
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      const btnEn = document.getElementById('btn-lang-en');
+      const btnAr = document.getElementById('btn-lang-ar');
+      if (lang === 'en') {
+        btnEn.className = 'px-2.5 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        btnAr.className = 'px-2.5 py-1 rounded-lg font-bold text-stone-400 hover:text-stone-200';
+      } else {
+        btnAr.className = 'px-2.5 py-1 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        btnEn.className = 'px-2.5 py-1 rounded-lg font-bold text-stone-400 hover:text-stone-200';
+      }
+      renderActiveHeader();
+    }
+
+    function renderActiveHeader() {
+      const isAr = currentLang === 'ar';
+      const container = document.getElementById('headerContainer');
+      container.innerHTML = HEADERS[currentHeader].render(isAr);
+    }
+
+    function setBg(opt) {
+      currentOption = opt;
+      ['A', 'B', 'E'].forEach(id => {
+        const btn = document.getElementById('btn-' + id);
+        if (btn) {
+          if (id === opt) {
+            btn.className = 'px-2.5 py-1 rounded-lg bg-stone-800 text-amber-300 border border-amber-500/30';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-lg bg-stone-800 text-stone-300 hover:bg-stone-700';
+          }
+        }
+      });
+
+      const bgLayer = document.getElementById('bgLayer');
+      const img = OVERLAYS[opt];
+      if (img) {
+        bgLayer.style.backgroundImage = "url('" + img + "')";
+        bgLayer.style.display = 'block';
+      } else {
+        bgLayer.style.backgroundImage = 'none';
+        bgLayer.style.display = 'none';
+      }
+    }
+
+    function setViewport(vp) {
+      currentVp = vp;
+      const frame = document.getElementById('stageFrame');
+      const btnD = document.getElementById('vp-desktop');
+      const btnM = document.getElementById('vp-mobile');
+
+      if (vp === 'desktop') {
+        frame.style.maxWidth = '960px';
+        frame.style.height = '560px';
+        btnD.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        btnM.className = 'px-3 py-1 rounded-lg text-xs font-medium text-stone-400 hover:text-stone-200';
+      } else {
+        frame.style.maxWidth = '380px';
+        frame.style.height = '720px';
+        btnM.className = 'px-3 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        btnD.className = 'px-3 py-1 rounded-lg text-xs font-medium text-stone-400 hover:text-stone-200';
+      }
+    }
+
+    function setGround(color) {
+      document.getElementById('stageFrame').style.backgroundColor = color;
+      if (color === '#dcd3c2') {
+        document.getElementById('btn-ground-1').className = 'px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        document.getElementById('btn-ground-2').className = 'px-2 py-0.5 rounded text-stone-400 hover:text-stone-200';
+      } else {
+        document.getElementById('btn-ground-2').className = 'px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        document.getElementById('btn-ground-1').className = 'px-2 py-0.5 rounded text-stone-400 hover:text-stone-200';
+      }
+    }
+
+    // Initial render
+    updateInfo();
+    renderActiveHeader();
+  </script>
+</body>
+</html>

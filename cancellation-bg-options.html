@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cancellation Task — Minimalist Background Options (Exact App Beige)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Space Mono', monospace;
+
+      /* ⚠ EXACT APP BEIGE TOKENS (tokens.css:197-205) — STRICTLY PRESERVED */
+      --play-surface: linear-gradient(180deg, #dfd7c7 0%, #d0c7b4 58%, #bfb5a0 100%);
+      --play-surface-flat: #d0c7b4;
+      --play-ink: #201d18;
+    }
+    body {
+      font-family: var(--font-sans);
+    }
+    .serif-title {
+      font-family: var(--font-serif);
+      letter-spacing: 0.08em;
+    }
+    .mono-num {
+      font-family: var(--font-mono);
+    }
+    .exact-app-beige {
+      background: var(--play-surface);
+    }
+  </style>
+</head>
+<body class="bg-stone-900 text-stone-100 min-h-screen p-4 sm:p-6 antialiased">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Header & Requirements Compliance Badge -->
+    <header class="bg-stone-800/90 border border-stone-700/80 rounded-2xl p-6 shadow-xl backdrop-blur-md">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-semibold tracking-wider uppercase">
+              Minimalist & Premium
+            </span>
+            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-xs font-semibold tracking-wider">
+              Exact App Beige Palette (#d0c7b4)
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold mt-2.5 serif-title tracking-wider text-amber-100">
+            Minimalist Background Treatments
+          </h1>
+          <p class="text-stone-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Preserves the app's exact beige surface (<code class="bg-stone-900 px-1.5 py-0.5 rounded text-amber-300 text-xs">#dfd7c7 → #d0c7b4 → #bfb5a0</code>) without shifting its hue or luminance.
+            Uses whisper-quiet hairline vector geometry that feels handcrafted, scholarly, and never interferes with search speed.
+          </p>
+        </div>
+
+        <!-- Viewport Switcher -->
+        <div class="flex items-center gap-2 bg-stone-900/80 p-2 rounded-xl border border-stone-700">
+          <span class="text-xs text-stone-400 font-medium pl-1">Viewport:</span>
+          <div class="flex rounded-lg bg-stone-800 p-0.5 text-xs">
+            <button id="btnDesktop" onclick="setView('desktop')" class="px-3 py-1.5 rounded-md font-medium transition bg-amber-500 text-stone-950 shadow">
+              Desktop
+            </button>
+            <button id="btnMobile" onclick="setView('mobile')" class="px-3 py-1.5 rounded-md font-medium text-stone-300 hover:text-white transition">
+              Mobile (390×844)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Minimalist Options Selector -->
+      <div class="mt-6 pt-4 border-t border-stone-700/80 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <button onclick="setDesign('baseline')" id="btn-baseline" class="des-btn text-left p-3.5 rounded-xl border transition text-xs font-medium border-stone-700 bg-stone-800/40 text-stone-400 hover:bg-stone-700/50">
+          <div class="font-bold text-stone-200">0. Current Baseline</div>
+          <div class="text-[11px] text-stone-400 mt-1">Flat plain beige void</div>
+        </button>
+
+        <button onclick="setDesign('meridian')" id="btn-meridian" class="des-btn text-left p-3.5 rounded-xl border transition text-xs font-medium border-amber-500/80 bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/40">
+          <div class="font-bold text-amber-300">A. Celestial Meridian (★)</div>
+          <div class="text-[11px] text-stone-300 mt-1">Concentric hairline ring & ticks</div>
+        </button>
+
+        <button onclick="setDesign('brackets')" id="btn-brackets" class="des-btn text-left p-3.5 rounded-xl border transition text-xs font-medium border-stone-700 bg-stone-800/40 text-stone-400 hover:bg-stone-700/50">
+          <div class="font-bold text-stone-200">B. Cartographic Brackets</div>
+          <div class="text-[11px] text-stone-400 mt-1">Fine corner crosshairs & frame</div>
+        </button>
+
+        <button onclick="setDesign('solitary')" id="btn-solitary" class="des-btn text-left p-3.5 rounded-xl border transition text-xs font-medium border-stone-700 bg-stone-800/40 text-stone-400 hover:bg-stone-700/50">
+          <div class="font-bold text-stone-200">C. Pure Astrolabe Ring</div>
+          <div class="text-[11px] text-stone-400 mt-1">Single ultra-minimal circle</div>
+        </button>
+      </div>
+
+      <!-- Live Opacity Slider -->
+      <div class="mt-4 flex items-center justify-between bg-stone-900/60 px-4 py-2.5 rounded-xl border border-stone-700/60 text-xs">
+        <div class="flex items-center gap-3">
+          <span class="text-stone-300 font-medium">Hairline Opacity:</span>
+          <input type="range" id="opacityRange" min="2" max="15" value="6" oninput="changeOpacity(this.value)" class="w-32 sm:w-48 accent-amber-500 cursor-pointer">
+          <span id="opacityLabel" class="text-amber-400 font-mono font-bold">6%</span>
+          <span class="text-stone-500 hidden sm:inline">(Whisper-quiet contrast against beige)</span>
+        </div>
+        <div class="text-[11px] text-stone-400">
+          Surface: <span class="text-amber-200 font-mono font-medium">--play-surface (100% Unchanged)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- LIVE INTERACTIVE STAGE -->
+    <main class="flex flex-col items-center justify-center">
+      <div id="stageWrapper" class="w-full transition-all duration-300 flex justify-center">
+
+        <!-- THE BOARD STAGE (EXACT APP BEIGE) -->
+        <div id="boardStage" class="relative overflow-hidden shadow-2xl transition-all duration-300 w-full h-[580px] rounded-2xl border border-[#b8ab96] select-none flex flex-col justify-between exact-app-beige">
+
+          <!-- TOP CELESTIAL BORDER BAR (Desktop) -->
+          <div id="topBar" class="relative z-20 w-full h-[64px] sm:h-[76px] flex-shrink-0 transition-all duration-300">
+            <div class="w-full h-full bg-cover bg-top relative overflow-hidden"
+                 style="background-image: url('/the-maze-man-comics/Assets/attention/cancel-starchart-bg.webp'); background-size: 100% auto; background-position: top center;">
+              <!-- Faint 1px contact line -->
+              <div class="absolute bottom-0 inset-x-0 h-[1px] bg-[#201d18]/10"></div>
+            </div>
+            <!-- Green Time Bar -->
+            <div class="absolute top-0 inset-x-0 h-1.5 bg-[#2d7a4d]">
+              <div class="h-full bg-[#34d399] w-[70%]"></div>
+            </div>
+          </div>
+
+          <!-- MINIMALIST VECTOR ARTWORK LAYER (Centered on play area) -->
+          <div id="minimalArtLayer" class="absolute inset-0 pointer-events-none flex items-center justify-center transition-opacity duration-300" style="opacity: 0.06;">
+
+            <!-- DESIGN A: Celestial Meridian -->
+            <svg id="svgMeridian" viewBox="0 0 800 800" class="w-[620px] h-[620px] max-w-none text-[#201d18]" fill="none" stroke="currentColor">
+              <!-- Outermost Coordinate Ring -->
+              <circle cx="400" cy="400" r="370" stroke-width="1.2" stroke-dasharray="6 6" />
+              <!-- Primary Clean Ring -->
+              <circle cx="400" cy="400" r="350" stroke-width="1.5" />
+              <circle cx="400" cy="400" r="342" stroke-width="0.8" opacity="0.6" />
+
+              <!-- Meridian & Celestial Equator Axes with tick marks -->
+              <line x1="400" y1="10" x2="400" y2="790" stroke-width="1" stroke-dasharray="8 6" opacity="0.7" />
+              <line x1="10" y1="400" x2="790" y2="400" stroke-width="1" stroke-dasharray="8 6" opacity="0.7" />
+
+              <!-- Cardinal Crosshair Ticks -->
+              <line x1="400" y1="20" x2="400" y2="58" stroke-width="2" />
+              <line x1="400" y1="742" x2="400" y2="780" stroke-width="2" />
+              <line x1="20" y1="400" x2="58" y2="400" stroke-width="2" />
+              <line x1="742" y1="400" x2="780" y2="400" stroke-width="2" />
+
+              <!-- Micro Compass Degree Text -->
+              <text x="400" y="75" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" font-weight="700" fill="currentColor" opacity="0.8">0° N</text>
+              <text x="400" y="735" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" font-weight="700" fill="currentColor" opacity="0.8">180° S</text>
+              <text x="735" y="404" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" font-weight="700" fill="currentColor" opacity="0.8">90° E</text>
+              <text x="65" y="404" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" font-weight="700" fill="currentColor" opacity="0.8">270° W</text>
+
+              <!-- Inner Astrolabe Horizon Circle -->
+              <circle cx="400" cy="400" r="230" stroke-width="1" stroke-dasharray="4 4" opacity="0.6" />
+              <!-- Delicate Center Cross -->
+              <circle cx="400" cy="400" r="4" fill="currentColor" opacity="0.7" />
+            </svg>
+
+            <!-- DESIGN B: Cartographic Brackets -->
+            <svg id="svgBrackets" viewBox="0 0 800 800" class="w-[580px] h-[580px] max-w-none text-[#201d18] hidden" fill="none" stroke="currentColor">
+              <!-- 4 Corner Cartouche Brackets -->
+              <!-- Top Left -->
+              <path d="M 120 200 L 120 120 L 200 120" stroke-width="2" />
+              <circle cx="120" cy="120" r="3" fill="currentColor" />
+              <!-- Top Right -->
+              <path d="M 680 200 L 680 120 L 600 120" stroke-width="2" />
+              <circle cx="680" cy="120" r="3" fill="currentColor" />
+              <!-- Bottom Left -->
+              <path d="M 120 600 L 120 680 L 200 680" stroke-width="2" />
+              <circle cx="120" cy="680" r="3" fill="currentColor" />
+              <!-- Bottom Right -->
+              <path d="M 680 600 L 680 680 L 600 680" stroke-width="2" />
+              <circle cx="680" cy="680" r="3" fill="currentColor" />
+
+              <!-- Hairline Perimeter Box -->
+              <rect x="140" y="140" width="520" height="520" stroke-width="0.8" stroke-dasharray="6 6" opacity="0.5" />
+
+              <!-- Center Alignment Crosshairs -->
+              <line x1="400" y1="100" x2="400" y2="150" stroke-width="1.5" />
+              <line x1="400" y1="650" x2="400" y2="700" stroke-width="1.5" />
+              <line x1="100" y1="400" x2="150" y2="400" stroke-width="1.5" />
+              <line x1="650" y1="400" x2="700" y2="400" stroke-width="1.5" />
+            </svg>
+
+            <!-- DESIGN C: Pure Astrolabe Ring -->
+            <svg id="svgSolitary" viewBox="0 0 800 800" class="w-[520px] h-[520px] max-w-none text-[#201d18] hidden" fill="none" stroke="currentColor">
+              <!-- Single Elegant Ring -->
+              <circle cx="400" cy="400" r="320" stroke-width="1.5" />
+              <!-- 4 Cardinal Microdots -->
+              <circle cx="400" cy="76" r="3.5" fill="currentColor" />
+              <circle cx="400" cy="724" r="3.5" fill="currentColor" />
+              <circle cx="76" cy="400" r="3.5" fill="currentColor" />
+              <circle cx="724" cy="400" r="3.5" fill="currentColor" />
+            </svg>
+
+          </div>
+
+          <!-- PLAYFIELD: HUD + GRID -->
+          <div class="relative z-10 flex-1 w-full px-4 py-2 flex items-center justify-center">
+            <div id="playArea" class="w-full h-full flex flex-row items-center justify-between max-w-4xl mx-auto gap-4">
+
+              <!-- Left HUD Card (Standard App Styling) -->
+              <div id="hudBox" class="w-48 bg-[#d0c7b4]/90 border border-[#b8ab96] rounded-2xl p-3.5 shadow-sm flex flex-col items-center gap-3 backdrop-blur-sm transition-all duration-300">
+                <div class="text-center">
+                  <span class="text-[10px] uppercase font-bold tracking-widest text-[#594d3c]">Target</span>
+                  <div class="mt-1 w-14 h-14 mx-auto rounded-xl bg-[#d0c7b4] border-2 border-[#16a34a] flex items-center justify-center shadow-sm">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/satellite.webp" class="w-10 h-10 object-contain drop-shadow" alt="Target">
+                  </div>
+                </div>
+
+                <div class="w-full grid grid-cols-2 gap-1.5 text-center">
+                  <div class="bg-[#c4bba7]/60 rounded-lg p-1.5 border border-[#b4a994]">
+                    <div class="text-[10px] font-bold text-[#30271b] mono-num">8.2s</div>
+                    <div class="text-[9px] text-[#594d3c] uppercase font-medium">Time</div>
+                  </div>
+                  <div class="bg-[#c4bba7]/60 rounded-lg p-1.5 border border-[#b4a994]">
+                    <div class="text-[10px] font-bold text-[#30271b] mono-num">1/3</div>
+                    <div class="text-[9px] text-[#594d3c] uppercase font-medium">Found</div>
+                  </div>
+                  <div class="bg-[#c4bba7]/60 rounded-lg p-1.5 border border-[#b4a994]">
+                    <div class="text-[10px] font-bold text-rose-900 mono-num">0/2</div>
+                    <div class="text-[9px] text-[#594d3c] uppercase font-medium">Errors</div>
+                  </div>
+                  <div class="bg-[#c4bba7]/60 rounded-lg p-1.5 border border-[#b4a994]">
+                    <div class="text-[10px] font-bold text-[#30271b] mono-num">240</div>
+                    <div class="text-[9px] text-[#594d3c] uppercase font-medium">Score</div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 w-full pt-1">
+                  <button class="flex-1 py-1 px-2 rounded-lg bg-[#c4bba7]/80 hover:bg-[#b8ab96] text-[#30271b] text-[11px] font-semibold border border-[#a89b86] transition">
+                    Pause
+                  </button>
+                  <button class="py-1 px-2 rounded-lg bg-[#c4bba7]/80 hover:bg-[#b8ab96] text-[#30271b] text-[11px] font-semibold border border-[#a89b86] transition">
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <!-- Center Board Grid (5x4) -->
+              <div class="flex-1 h-full flex items-center justify-center">
+                <div class="grid grid-cols-4 gap-3 p-3">
+
+                  <!-- Tile 1 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#16a34a] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/satellite.webp" class="w-full h-full object-contain" alt="satellite">
+                  </div>
+                  <!-- Tile 2 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#d97706] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/galaxy.webp" class="w-full h-full object-contain" alt="galaxy">
+                  </div>
+                  <!-- Tile 3 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#2563eb] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/lunar-rover.webp" class="w-full h-full object-contain" alt="rover">
+                  </div>
+                  <!-- Tile 4 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#db2777] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/crystal.webp" class="w-full h-full object-contain" alt="crystal">
+                  </div>
+
+                  <!-- Tile 5 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#d97706] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/rocket.webp" class="w-full h-full object-contain" alt="rocket">
+                  </div>
+                  <!-- Tile 6 (Cleared) -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-emerald-600 p-1.5 flex items-center justify-center shadow-sm opacity-50 relative">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/satellite.webp" class="w-full h-full object-contain filter grayscale-[50%]" alt="satellite">
+                    <div class="absolute inset-0 flex items-center justify-center text-emerald-800 font-bold text-xl">✓</div>
+                  </div>
+                  <!-- Tile 7 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#2563eb] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/galaxy.webp" class="w-full h-full object-contain" alt="galaxy">
+                  </div>
+                  <!-- Tile 8 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#d97706] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/lunar-rover.webp" class="w-full h-full object-contain" alt="rover">
+                  </div>
+
+                  <!-- Tile 9 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#db2777] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/planet.webp" class="w-full h-full object-contain" alt="planet">
+                  </div>
+                  <!-- Tile 10 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#16a34a] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/satellite.webp" class="w-full h-full object-contain" alt="satellite">
+                  </div>
+                  <!-- Tile 11 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#16a34a] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/rocket.webp" class="w-full h-full object-contain" alt="rocket">
+                  </div>
+                  <!-- Tile 12 -->
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#d0c7b4] border-2 border-[#2563eb] p-1.5 flex items-center justify-center shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                    <img src="/the-maze-man-comics/Assets/training/cancel-cosmic-atlas-2026/crystal.webp" class="w-full h-full object-contain" alt="crystal">
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Right Balance Element (Desktop Only) -->
+              <div class="w-48 hidden lg:flex flex-col items-center justify-center p-3 opacity-60 text-center text-[11px] text-[#4a3e2e]">
+                <div class="w-10 h-10 rounded-full border border-dashed border-[#73634e] flex items-center justify-center mb-2">
+                  <span class="text-xs">⚝</span>
+                </div>
+                <span class="serif-title font-semibold tracking-wider">Carta Coelestis</span>
+                <span class="text-[10px] text-[#594d3c]">Attention Ladder · L1</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- BOTTOM CELESTIAL BORDER BAR (Desktop) -->
+          <div id="bottomBar" class="relative z-20 w-full h-[64px] sm:h-[76px] flex-shrink-0 transition-all duration-300">
+            <div class="w-full h-full bg-cover bg-bottom relative overflow-hidden"
+                 style="background-image: url('/the-maze-man-comics/Assets/attention/cancel-starchart-bg.webp'); background-size: 100% auto; background-position: bottom center;">
+              <div class="absolute top-0 inset-x-0 h-[1px] bg-[#201d18]/10"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- ARCHITECTURAL SUMMARY -->
+    <section class="bg-stone-800/80 border border-stone-700/80 rounded-2xl p-6 text-xs text-stone-300 space-y-4">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+        <h3 class="text-sm font-bold text-amber-100 uppercase tracking-wider">How This Directly Solves Your Requirements</h3>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-stone-300">
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-stone-700/60 space-y-2">
+          <div class="font-bold text-amber-300 text-xs">1. 100% Exact App Beige</div>
+          <p class="text-stone-400 leading-relaxed">
+            The board surface remains <code class="text-amber-200">linear-gradient(180deg, #dfd7c7 0%, #d0c7b4 58%, #bfb5a0 100%)</code>. No hue shifting, no white washing, no yellowing.
+          </p>
+        </div>
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-stone-700/60 space-y-2">
+          <div class="font-bold text-amber-300 text-xs">2. Minimalist & Non-Distracting</div>
+          <p class="text-stone-400 leading-relaxed">
+            Clean 1px single-path vector geometry drawn in the app's own ink (<code class="text-amber-200">#201d18</code>) at only <strong>5%–7% opacity</strong>. Zero visual clutter, zero search latency.
+          </p>
+        </div>
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-stone-700/60 space-y-2">
+          <div class="font-bold text-amber-300 text-xs">3. Perfectly Responsive (Desktop & Mobile)</div>
+          <p class="text-stone-400 leading-relaxed">
+            On desktop, it connects the top and bottom borders cleanly through the center. On mobile, it stays centered around the grid and never gets cropped by the HUD.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    let activeDesign = 'meridian';
+    let currentView = 'desktop';
+
+    function setDesign(design) {
+      activeDesign = design;
+
+      // Update button highlights
+      document.querySelectorAll('.des-btn').forEach(btn => {
+        btn.classList.remove('border-amber-500/80', 'bg-amber-500/10', 'text-amber-200', 'ring-1', 'ring-amber-500/40');
+        btn.classList.add('border-stone-700', 'text-stone-400');
+      });
+      const activeBtn = document.getElementById(`btn-${design}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-stone-700', 'text-stone-400');
+        activeBtn.classList.add('border-amber-500/80', 'bg-amber-500/10', 'text-amber-200', 'ring-1', 'ring-amber-500/40');
+      }
+
+      const svgM = document.getElementById('svgMeridian');
+      const svgB = document.getElementById('svgBrackets');
+      const svgS = document.getElementById('svgSolitary');
+      const layer = document.getElementById('minimalArtLayer');
+
+      svgM.classList.add('hidden');
+      svgB.classList.add('hidden');
+      svgS.classList.add('hidden');
+
+      if (design === 'baseline') {
+        layer.style.opacity = '0';
+      } else if (design === 'meridian') {
+        svgM.classList.remove('hidden');
+        const op = document.getElementById('opacityRange').value / 100;
+        layer.style.opacity = op.toString();
+      } else if (design === 'brackets') {
+        svgB.classList.remove('hidden');
+        const op = document.getElementById('opacityRange').value / 100;
+        layer.style.opacity = op.toString();
+      } else if (design === 'solitary') {
+        svgS.classList.remove('hidden');
+        const op = document.getElementById('opacityRange').value / 100;
+        layer.style.opacity = op.toString();
+      }
+    }
+
+    function changeOpacity(val) {
+      document.getElementById('opacityLabel').innerText = val + '%';
+      if (activeDesign !== 'baseline') {
+        document.getElementById('minimalArtLayer').style.opacity = (val / 100).toString();
+      }
+    }
+
+    function setView(view) {
+      currentView = view;
+      const stage = document.getElementById('boardStage');
+      const playArea = document.getElementById('playArea');
+      const hudBox = document.getElementById('hudBox');
+      const topBar = document.getElementById('topBar');
+      const bottomBar = document.getElementById('bottomBar');
+
+      const btnD = document.getElementById('btnDesktop');
+      const btnM = document.getElementById('btnMobile');
+
+      if (view === 'mobile') {
+        btnM.classList.add('bg-amber-500', 'text-stone-950', 'shadow');
+        btnM.classList.remove('text-stone-300');
+        btnD.classList.remove('bg-amber-500', 'text-stone-950', 'shadow');
+        btnD.classList.add('text-stone-300');
+
+        stage.style.width = '390px';
+        stage.style.height = '740px';
+        stage.style.borderRadius = '32px';
+
+        playArea.classList.remove('flex-row', 'justify-between');
+        playArea.classList.add('flex-col', 'justify-start', 'gap-2');
+
+        hudBox.style.width = '100%';
+        hudBox.classList.remove('w-48');
+
+        // On mobile, the top/bottom bars adjust
+        topBar.style.height = '48px';
+        bottomBar.style.height = '48px';
+      } else {
+        btnD.classList.add('bg-amber-500', 'text-stone-950', 'shadow');
+        btnD.classList.remove('text-stone-300');
+        btnM.classList.remove('bg-amber-500', 'text-stone-950', 'shadow');
+        btnM.classList.add('text-stone-300');
+
+        stage.style.width = '100%';
+        stage.style.height = '580px';
+        stage.style.borderRadius = '16px';
+
+        playArea.classList.remove('flex-col', 'justify-start', 'gap-2');
+        playArea.classList.add('flex-row', 'justify-between');
+
+        hudBox.style.width = '12rem';
+
+        topBar.style.height = '76px';
+        bottomBar.style.height = '76px';
+      }
+    }
+
+    setDesign('meridian');
+  </script>
+</body>
+</html>
