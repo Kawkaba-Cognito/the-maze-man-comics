@@ -49,6 +49,7 @@ import {
   gameRatingByGameKey,
   ratingBand,
 } from '../../features/training/rating';
+import { assetUrl } from '../../lib/assetUrl';
 
 const GAME_ICON_MAP = {
   'cancel-task': Crosshair,
@@ -79,6 +80,7 @@ const DOMAINS_LIST = [
     Icon: Crosshair,
     color: '#FF7800',
     softBg: '#FFF4E5',
+    art: 'Assets/domain-art/editorial-2026/attention.webp',
     descAr: 'البحث البصري، التركيز المستدام، وتثبيط المشتتات',
     descEn: 'Visual search, sustained focus & distractor filtering',
   },
@@ -89,6 +91,7 @@ const DOMAINS_LIST = [
     Icon: Lightning,
     color: '#0B63CE',
     softBg: '#EFF6FF',
+    art: 'Assets/domain-art/editorial-2026/speed.webp',
     descAr: 'سرعة المعالجة الذهنية، الحساب السريع، ودقة التوقيت',
     descEn: 'Rapid processing, mental arithmetic & reaction timing',
   },
@@ -99,6 +102,7 @@ const DOMAINS_LIST = [
     Icon: Brain,
     color: '#1CB0F6',
     softBg: '#F0F9FF',
+    art: 'Assets/domain-art/editorial-2026/memory.webp',
     descAr: 'الذاكرة العاملة، التذكر المكاني، وتسلسل الأحداث',
     descEn: 'Working memory updating, spatial recall & sequencing',
   },
@@ -109,6 +113,7 @@ const DOMAINS_LIST = [
     Icon: ChatCircleText,
     color: '#0D9488',
     softBg: '#F0FDFA',
+    art: 'Assets/domain-art/editorial-2026/language.webp',
     descAr: 'المفردات، الروابط الدلالية، والمعرفة العامة',
     descEn: 'Vocabulary retrieval, word links & general knowledge',
   },
@@ -119,6 +124,7 @@ const DOMAINS_LIST = [
     Icon: PuzzlePiece,
     color: '#4F46E5',
     softBg: '#EEF2FF',
+    art: 'Assets/domain-art/editorial-2026/reasoning.webp',
     descAr: 'التخطيط المكاني، استنتاج القواعد، والتحليل المنطقي',
     descEn: 'Spatial planning, rule induction & deductive logic',
   },
@@ -129,6 +135,7 @@ const DOMAINS_LIST = [
     Icon: ArrowsClockwise,
     color: '#DF4E32',
     softBg: '#FFF1EE',
+    art: 'Assets/domain-art/editorial-2026/flexibility.webp',
     descAr: 'التكيف الحركي، تبديل المهام، وإعادة التصنيف',
     descEn: 'Task switching, motor adaptation & creative sorting',
   },
@@ -382,7 +389,6 @@ export default function DomainsScreen() {
   // Domain Detail Mode (Clean Lumosity/Elevate Editorial Header + Exercises List)
   if (selectedSummary) {
     const { domain, games, playedCount, rating, band, guardian } = selectedSummary;
-    const DomainIcon = domain.Icon;
     const domainName = isAr ? domain.ar : domain.en;
     const domainDesc = isAr ? domain.descAr : domain.descEn;
 
@@ -439,16 +445,20 @@ export default function DomainsScreen() {
             })}
           </nav>
 
-          {/* Clean Flat-Vector Domain Header Card */}
+          {/* Clean 2D Illustrated Domain Header Card */}
           <section className="lum-domain-detail-card">
             <div className="lum-domain-detail-head">
-              <span
-                className="lum-tile-icon lum-tile-icon--lg"
-                style={{ backgroundColor: domain.color }}
+              <div
+                className="lum-detail-art-box"
+                style={{ backgroundColor: domain.softBg }}
                 aria-hidden="true"
               >
-                <DomainIcon size={26} weight="fill" color="#FFFFFF" />
-              </span>
+                <img
+                  src={assetUrl(domain.art)}
+                  alt=""
+                  draggable="false"
+                />
+              </div>
 
               <div className="lum-domain-detail-copy">
                 <div className="lum-domain-detail-meta">
@@ -601,67 +611,80 @@ export default function DomainsScreen() {
             aria-label={isAr ? 'المجالات الإدراكية' : 'Cognitive domains'}
           >
             {domainSummaries.map(({ domain, games, playedCount, rating, band }) => {
-              const DomainIcon = domain.Icon;
               const name = isAr ? domain.ar : domain.en;
               const desc = isAr ? domain.descAr : domain.descEn;
               const pct = Math.round((playedCount / Math.max(1, games.length)) * 100);
+              const guardian = getDomainGuardian(domain.id);
 
               return (
                 <button
                   key={domain.id}
                   type="button"
-                  className="lum-domain-card"
+                  className="lum-domain-card lum-domain-card--illustrated"
                   style={{ '--dom-color': domain.color, '--dom-soft': domain.softBg }}
                   onClick={() => handleSelectDomain(domain.id)}
                 >
-                  <div className="lum-domain-card-top">
-                    <span
-                      className="lum-tile-icon"
-                      style={{ backgroundColor: domain.color }}
-                      aria-hidden="true"
-                    >
-                      <DomainIcon size={22} weight="fill" color="#FFFFFF" />
-                    </span>
-
+                  <div
+                    className="lum-card-stage"
+                    style={{ backgroundColor: domain.softBg }}
+                  >
+                    <img
+                      src={assetUrl(domain.art)}
+                      alt=""
+                      draggable="false"
+                      className="lum-card-stage-img"
+                    />
+                    {guardian && (
+                      <span className="nayzak-stage-guardian" title={isAr ? guardian.nameAr : guardian.nameEn}>
+                        <img
+                          src={guardian.avatarUrl}
+                          alt={isAr ? guardian.nameAr : guardian.nameEn}
+                          draggable="false"
+                        />
+                        <span>{isAr ? guardian.nameAr : guardian.nameEn}</span>
+                      </span>
+                    )}
                     {rating != null && band ? (
-                      <span className="lum-rating-chip">
+                      <span className="lum-rating-chip lum-stage-pill">
                         <Star size={11} weight="fill" aria-hidden="true" />
                         <span>{`${rating} · ${isAr ? band.ar : band.en}`}</span>
                       </span>
                     ) : (
-                      <span className="lum-count-pill">
+                      <span className="lum-count-pill lum-stage-pill">
                         {isAr ? `${games.length} ألعاب` : `${games.length} games`}
                       </span>
                     )}
                   </div>
 
-                  <div className="lum-domain-card-body">
-                    <h2 className="lum-domain-card-title">{name}</h2>
-                    <p className="lum-domain-card-desc">{desc}</p>
-                  </div>
-
-                  <div className="lum-domain-card-foot">
-                    <div className="lum-domain-prog">
-                      <div className="lum-domain-prog-track">
-                        <div
-                          className="lum-domain-prog-fill"
-                          style={{
-                            width: `${playedCount > 0 ? Math.max(pct, 14) : 0}%`,
-                            backgroundColor: domain.color,
-                          }}
-                        />
-                      </div>
-                      <span className="lum-domain-prog-lbl">
-                        {isAr
-                          ? `${playedCount}/${games.length}`
-                          : `${playedCount}/${games.length} played`}
-                      </span>
+                  <div className="lum-card-content">
+                    <div className="lum-domain-card-body">
+                      <h2 className="lum-domain-card-title">{name}</h2>
+                      <p className="lum-domain-card-desc">{desc}</p>
                     </div>
 
-                    <span className="lum-domain-cta" style={{ color: domain.color }}>
-                      <span>{isAr ? 'تدرب' : 'Train'}</span>
-                      <NavArrow size={14} weight="bold" aria-hidden="true" />
-                    </span>
+                    <div className="lum-domain-card-foot">
+                      <div className="lum-domain-prog">
+                        <div className="lum-domain-prog-track">
+                          <div
+                            className="lum-domain-prog-fill"
+                            style={{
+                              width: `${playedCount > 0 ? Math.max(pct, 14) : 0}%`,
+                              backgroundColor: domain.color,
+                            }}
+                          />
+                        </div>
+                        <span className="lum-domain-prog-lbl">
+                          {isAr
+                            ? `${playedCount}/${games.length}`
+                            : `${playedCount}/${games.length} played`}
+                        </span>
+                      </div>
+
+                      <span className="lum-domain-cta" style={{ color: domain.color }}>
+                        <span>{isAr ? 'تدرب' : 'Train'}</span>
+                        <NavArrow size={14} weight="bold" aria-hidden="true" />
+                      </span>
+                    </div>
                   </div>
                 </button>
               );

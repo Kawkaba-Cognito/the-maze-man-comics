@@ -7435,3 +7435,665 @@ html[data-home-theme='dark'] .lum-rating-chip {
 html[data-home-theme='dark'] .lum-guardian-strip {
   border-top-color: rgba(255, 255, 255, 0.08);
 }
+
+/* ==========================================================================
+   TACTILE GAME STUDIO UPGRADE: BRAND LOCKUP, HEADER COLLAPSE, STAGES & BENTO
+   ========================================================================== */
+
+/* 1. Crisp 2D Brand Lockup (Kawkab Emblem + NAYZAK Typography) */
+.nayzak-brand-emblem {
+  background: #fff4e5;
+  border: 1.5px solid rgba(255, 120, 0, 0.22);
+  box-shadow: 0 2px 0 rgba(255, 120, 0, 0.14);
+}
+
+html[data-home-theme='dark'] .nayzak-brand-emblem,
+.dark .nayzak-brand-emblem {
+  background: #1a2f4e;
+  border-color: rgba(255, 176, 18, 0.28);
+}
+
+.nayzak-brand-wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.nayzak-brand-title {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f1e33;
+}
+
+.nayzak-brand-sub {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: #ff7800;
+  margin-top: 1px;
+}
+
+html[data-home-theme='dark'] .nayzak-brand-title,
+.dark .nayzak-brand-title {
+  color: #f8fafc;
+}
+
+/* 2. Remove Dead 60px White Top Bar on Desktop Main Tabs */
+@media (min-width: 768px) {
+  #ui-shell.ui-shell--desktop-rail .nayzak-header.duo-styled-header.is-main-view {
+    position: relative;
+    height: auto !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 18px 24px 0 !important;
+  }
+
+  #ui-shell.ui-shell--desktop-rail .duo-header-inner,
+  #ui-shell.ui-shell--desktop-rail .duo-home-container,
+  #ui-shell.ui-shell--desktop-rail .duo-puzzle-container,
+  #ui-shell.ui-shell--desktop-rail .duo-profile-container {
+    max-width: 920px;
+  }
+
+  #ui-shell.ui-shell--desktop-rail .duo-home-container,
+  #ui-shell.ui-shell--desktop-rail .duo-puzzle-container,
+  #ui-shell.ui-shell--desktop-rail .duo-profile-container {
+    padding-top: 6px;
+  }
+}
+
+/* 3. Tactile Game Card Depth & Pastel Illustrated Card Stages */
+.lum-hero-card,
+.lum-module-card,
+.lum-domain-detail-card,
+.lum-radar-card,
+.lum-identity-compact {
+  border: 1.5px solid rgba(15, 30, 51, 0.09) !important;
+  border-bottom: 3.5px solid rgba(15, 30, 51, 0.11) !important;
+}
+
+.lum-primary-cta {
+  border-bottom: 4px solid #c95800 !important;
+}
+
+.lum-primary-cta:active {
+  transform: translateY(2px) !important;
+  border-bottom-width: 2px !important;
+}
+
+.lum-pro-inline-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #0f1e33;
+  color: #fde68a;
+  border: none;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, transform 0.12s ease;
+}
+
+.lum-pro-inline-chip:hover {
+  background: #172d4d;
+  transform: translateY(-1px);
+}
+
+.lum-domain-card--illustrated {
+  padding: 0 !important;
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1.5px solid rgba(15, 30, 51, 0.09) !important;
+  border-bottom: 4px solid rgba(15, 30, 51, 0.12) !important;
+}
+
+.lum-domain-card--illustrated:hover {
+  border-color: rgba(11, 99, 206, 0.3) !important;
+  border-bottom-color: rgba(11, 99, 206, 0.35) !important;
+}
+
+.lum-card-stage {
+  position: relative;
+  width: 100%;
+  height: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(15, 30, 51, 0.06);
+  overflow: hidden;
+}
+
+.lum-card-stage-img {
+  height: 92px;
+  width: auto;
+  max-width: 78%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 5px 12px rgba(15, 30, 51, 0.12));
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lum-domain-card--illustrated:hover .lum-card-stage-img {
+  transform: translateY(-3px) scale(1.04);
+}
+
+.lum-stage-pill {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 2px 8px rgba(15, 30, 51, 0.08);
+}
+
+.lum-card-content {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+}
+
+.lum-detail-art-box {
+  width: 74px;
+  height: 74px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(15, 30, 51, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.lum-detail-art-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@media (min-width: 960px) {
+  .lum-domains-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lum-domains-grid.lum-puzzles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 4. Insights 2-Column Desktop Bento Grid */
+.lum-insights-bento {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .lum-insights-bento {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+
+.lum-insights-col-left,
+.lum-insights-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.lum-identity-compact {
+  padding: 20px 18px 18px !important;
+  margin-bottom: 0 !important;
+}
+
+.lum-stats-compact {
+  margin-bottom: 0 !important;
+  gap: 10px !important;
+}
+
+.lum-radar-card {
+  margin-bottom: 0 !important;
+}
+
+.lum-pro-insight-card {
+  width: 100%;
+  background: linear-gradient(135deg, #0f1e33 0%, #152c4e 100%);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 10px 24px rgba(15, 30, 51, 0.16);
+  box-sizing: border-box;
+}
+
+.lum-pro-insight-card .ed-pro-head h3 {
+  color: #ffffff;
+}
+
+.lum-pro-insight-card p {
+  color: #cbd5e1;
+}
+
+html[data-home-theme='dark'] .lum-card-stage,
+html[data-home-theme='dark'] .lum-detail-art-box {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-home-theme='dark'] .lum-stage-pill {
+  background: rgba(15, 30, 51, 0.9) !important;
+  color: #f8fafc !important;
+}
+
+html[data-home-theme='dark'] .lum-hero-card,
+html[data-home-theme='dark'] .lum-module-card,
+html[data-home-theme='dark'] .lum-domain-card--illustrated,
+html[data-home-theme='dark'] .lum-domain-detail-card,
+html[data-home-theme='dark'] .lum-radar-card,
+html[data-home-theme='dark'] .lum-identity-compact {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ==========================================================================
+   NAYZAK GAMES CANONICAL BRAND IDENTITY SYSTEM
+   (Warm Doodle Canvas, Yellow Comic Challenge Ribbons, Un-cropped Family Cast)
+   ========================================================================== */
+
+/* 1. Playful Subtle Doodle Watermark Wallpaper (Matches Snapchat/YouTube Brand) */
+.nayzak-page {
+  background-color: #faf7f2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%230F1E33' stroke-opacity='0.045' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M36 42a12 12 0 1 1 20 8c-2 2-3 5-3 7h-14c0-2-1-5-3-7a12 12 0 0 1 0-8zM40 62h12M42 66h8'/%3E%3Ccircle cx='164' cy='46' r='14'/%3E%3Cpath d='M160 42a4.5 4.5 0 0 1 8.5 1.5c0 3-4.5 3.5-4.5 6.5M164 54h.01'/%3E%3Cpath d='M48 158l4 8 9 1-6.5 6 1.8 9-8.3-4.5-8.3 4.5 1.8-9-6.5-6 9-1z'/%3E%3Cpath d='M154 148h10a4 4 0 0 1 4-4 4 4 0 0 1 4 4h10v10a4 4 0 0 1 4 4 4 4 0 0 1-4 4v10h-28v-10a4 4 0 0 0 4-4 4 4 0 0 0-4-4z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+html[data-home-theme='dark'] .nayzak-page,
+.dark .nayzak-page {
+  background-color: #0b1526 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23FFB012' stroke-opacity='0.055' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M36 42a12 12 0 1 1 20 8c-2 2-3 5-3 7h-14c0-2-1-5-3-7a12 12 0 0 1 0-8zM40 62h12M42 66h8'/%3E%3Ccircle cx='164' cy='46' r='14'/%3E%3Cpath d='M160 42a4.5 4.5 0 0 1 8.5 1.5c0 3-4.5 3.5-4.5 6.5M164 54h.01'/%3E%3Cpath d='M48 158l4 8 9 1-6.5 6 1.8 9-8.3-4.5-8.3 4.5 1.8-9-6.5-6 9-1z'/%3E%3Cpath d='M154 148h10a4 4 0 0 1 4-4 4 4 0 0 1 4 4h10v10a4 4 0 0 1 4 4 4 4 0 0 1-4 4v10h-28v-10a4 4 0 0 0 4-4 4 4 0 0 0-4-4z'/%3E%3C/g%3E%3C/svg%3E") !important;
+  background-size: 220px 220px;
+}
+
+/* Official Logo Emblem & Wordmark */
+.nayzak-brand-emblem {
+  background: #ffe9ad !important;
+  border: 2px solid #0f1e33 !important;
+  box-shadow: 0 2px 0 #0f1e33 !important;
+}
+
+.nayzak-games-wordmark-img {
+  filter: drop-shadow(0 1.5px 0 rgba(15, 30, 51, 0.2));
+}
+
+/* Signature Golden Comic Challenge Ribbon (From Thumbnails) */
+.nayzak-comic-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: #facc15;
+  color: #0f1e33;
+  border: 2px solid #0f1e33;
+  box-shadow: 0 2.5px 0 #0f1e33;
+  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-1.2deg);
+  white-space: nowrap;
+}
+
+.nayzak-comic-ribbon--sm {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+[dir='rtl'] .nayzak-comic-ribbon {
+  transform: rotate(1.2deg);
+}
+
+/* 2. Today Hero Show-Host Stage */
+.lum-hero-card--nayzak {
+  border: 2px solid #0f1e33 !important;
+  border-bottom: 5px solid #0f1e33 !important;
+  box-shadow: 0 10px 28px rgba(15, 30, 51, 0.08) !important;
+}
+
+.nayzak-hero-stage {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.nayzak-hero-host-box {
+  width: 78px;
+  height: 92px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #fff3c4 0%, #ffd580 100%);
+  border: 2px solid #0f1e33;
+  box-shadow: 0 3px 0 #0f1e33;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 4px 4px 2px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.nayzak-hero-host-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  display: block;
+}
+
+.nayzak-hero-stage-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nayzak-hero-top-pills {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nayzak-hero-speech {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .nayzak-hero-host-box {
+    width: 66px;
+    height: 82px;
+  }
+}
+
+html[data-home-theme='dark'] .nayzak-hero-host-box {
+  background: linear-gradient(160deg, #1b365d 0%, #244778 100%);
+  border-color: rgba(255, 176, 18, 0.72);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55);
+}
+
+html[data-home-theme='dark'] .nayzak-hero-speech {
+  color: #cbd5e1;
+}
+
+html[data-home-theme='dark'] .lum-hero-card--nayzak {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.58) !important;
+}
+
+/* 3. Focus Guardian & Domain / Puzzle Stage Guardians (Never Cropped!) */
+.nayzak-mini-guardian {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #fff3d6;
+  border: 2px solid #0f1e33;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.nayzak-mini-guardian img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.nayzak-stage-guardian {
+  position: absolute;
+  bottom: 8px;
+  inset-inline-start: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid #0f1e33;
+  box-shadow: 0 2px 0 rgba(15, 30, 51, 0.85);
+  color: #0f1e33;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.nayzak-stage-guardian img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}
+
+html[data-home-theme='dark'] .nayzak-stage-guardian {
+  background: rgba(15, 30, 51, 0.92);
+  color: #f8fafc;
+  border-color: rgba(255, 176, 18, 0.6);
+}
+
+/* Enlarged un-cropped Domain Detail Guardian Avatar */
+.lum-guardian-avatar {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 16px !important;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+  background: #fff3d6;
+  border: 2px solid #0f1e33;
+  padding: 3px;
+  box-shadow: 0 2.5px 0 #0f1e33;
+}
+
+html[data-home-theme='dark'] .lum-guardian-avatar {
+  background: #1a2f4e;
+  border-color: rgba(255, 176, 18, 0.55);
+}
+
+/* 4. Puzzles Spotlight Card Starring Grandpa Dalfin */
+.nayzak-riddle-spotlight {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.nayzak-spotlight-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fffdf7 0%, #fff4d6 100%);
+  border: 2px solid #0f1e33;
+  border-bottom: 5px solid #0f1e33;
+  border-radius: 22px;
+  text-align: start;
+  cursor: pointer;
+  box-sizing: border-box;
+  box-shadow: 0 8px 22px rgba(15, 30, 51, 0.08);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.nayzak-spotlight-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(15, 30, 51, 0.12);
+}
+
+.nayzak-spotlight-char {
+  width: 68px;
+  height: 76px;
+  border-radius: 16px;
+  background: #ffe59e;
+  border: 2px solid #0f1e33;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.nayzak-spotlight-char img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.nayzak-spotlight-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.nayzak-spotlight-title {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f1e33;
+  line-height: 1.2;
+}
+
+.nayzak-spotlight-sub {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.nayzak-spotlight-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #ff7800;
+  color: #ffffff;
+  border: 2px solid #0f1e33;
+  box-shadow: 0 3px 0 #0f1e33;
+  font-size: 13px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+html[data-home-theme='dark'] .nayzak-spotlight-btn {
+  background: linear-gradient(135deg, #132541 0%, #1a3256 100%);
+  border-color: rgba(255, 176, 18, 0.55);
+  border-bottom-color: rgba(0, 0, 0, 0.65);
+}
+
+html[data-home-theme='dark'] .nayzak-spotlight-char {
+  background: #23406d;
+  border-color: rgba(255, 176, 18, 0.55);
+}
+
+html[data-home-theme='dark'] .nayzak-spotlight-title {
+  color: #f8fafc;
+}
+
+html[data-home-theme='dark'] .nayzak-spotlight-sub {
+  color: #cbd5e1;
+}
+
+/* 5. Insights Profile Avatar & Rail Mascot Un-cropped Framing */
+.duo-avatar-circle {
+  background: linear-gradient(155deg, #fff3c4 0%, #ffdf88 100%) !important;
+  border: 3px solid #0f1e33 !important;
+  box-shadow: 0 4px 0 #0f1e33 !important;
+  padding: 5px !important;
+}
+
+.duo-avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;
+  object-position: center bottom !important;
+}
+
+.duo-pose-btn {
+  background: #fff9ec !important;
+  border: 2px solid rgba(15, 30, 51, 0.16) !important;
+  padding: 3px !important;
+}
+
+.duo-pose-btn.is-selected {
+  border-color: #ff7800 !important;
+  background: #ffe8c2 !important;
+}
+
+.duo-pose-btn img {
+  object-fit: contain !important;
+}
+
+.nayzak-profile-cast-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff3d6;
+  border: 1.5px solid #0f1e33;
+  color: #0f1e33;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+html[data-home-theme='dark'] .nayzak-profile-cast-tag {
+  background: #1a2f4e;
+  color: #fde68a;
+  border-color: rgba(255, 176, 18, 0.45);
+}
+
+.nayzak-rail-mascot {
+  object-fit: contain !important;
+  background: #fff3d6;
+  border-radius: 12px;
+  padding: 2px;
+  border: 1.5px solid #0f1e33;
+}

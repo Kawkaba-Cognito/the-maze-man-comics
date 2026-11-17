@@ -49,6 +49,7 @@ import {
   consumeJustCompleted,
 } from '../../features/workout/workoutState';
 import { todayKey } from '../../features/workout/workoutPlan';
+import { getDomainGuardian } from '../../data/nayzakCast';
 import { assetUrl } from '../../lib/assetUrl';
 
 const WORKOUT_COMPLETE_BONUS = 50;
@@ -316,12 +317,16 @@ export default function HomeScreen() {
       ? [...ratedDomains].sort((a, b) => a.rating - b.rating)[0].id
       : 'attention';
   const recMeta = DOMAINS_META[recommendedDomainId];
+  const recGuardian = getDomainGuardian(recommendedDomainId);
   const recRating = domainRating(recommendedDomainId);
   const recBand = recRating != null ? ratingBand(recRating) : null;
   const recGames = TRAINING_GAMES.filter((g) => g.domainId === recommendedDomainId);
   const starterGame = recGames[0] || TRAINING_GAMES[0];
   const RecIcon = recMeta.Icon;
   const RowChevron = isAr ? CaretLeft : CaretRight;
+  const hostSpriteUrl = wkAllDone
+    ? assetUrl('Assets/brand/cast-2026/nayzak-epiphany.webp')
+    : assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
 
   return (
     <div className="nayzak-page" dir={isAr ? 'rtl' : 'ltr'}>
@@ -365,54 +370,83 @@ export default function HomeScreen() {
           </div>
         </section>
 
-        {/* 1. Primary Lumosity/Elevate Daily Workout Card (Single Clean Surface) */}
+        {/* 1. Official NAYZAK Show Host Daily Workout Stage */}
         <section
-          className="lum-hero-card"
-          aria-label={isAr ? 'تمرين اليوم' : "Daily Workout"}
+          className="lum-hero-card lum-hero-card--nayzak"
+          aria-label={isAr ? 'تمرين اليوم' : 'Daily Workout'}
         >
-          <div className="lum-hero-head">
-            <div className="lum-hero-identity">
-              <div className="lum-mascot-plate" aria-hidden="true">
-                <img
-                  src={assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp')}
-                  alt=""
-                  draggable="false"
-                />
-              </div>
-              <div className="lum-hero-titles">
-                <span className="lum-hero-eyebrow">
-                  {isAr ? 'البرنامج اليومي' : 'DAILY WORKOUT'}
-                </span>
-                <h2 className="lum-hero-title">
-                  {wkAllDone
-                    ? isAr
-                      ? 'اكتملت جلسة اليوم'
-                      : 'Session Complete'
-                    : isAr
-                    ? currentGoal.ar
-                    : currentGoal.en}
-                </h2>
-                <p className="lum-hero-meta">
-                  {isAr
-                    ? `${wkDoneCount} من ${wkTotal} ألعاب · ~10 دقائق`
-                    : `${wkDoneCount} of ${wkTotal} games · ~10 min`}
-                </p>
-              </div>
+          <div className="nayzak-hero-stage">
+            <div className="nayzak-hero-host-box" aria-hidden="true">
+              <img
+                src={hostSpriteUrl}
+                alt=""
+                draggable="false"
+                className="nayzak-hero-host-img"
+              />
             </div>
 
-            <button
-              type="button"
-              className="ed-focus-btn"
-              onClick={() => {
-                playSfx?.('tap');
-                setShowGoalPicker((v) => !v);
-              }}
-              aria-expanded={showGoalPicker}
-            >
-              <SlidersHorizontal size={14} weight="bold" aria-hidden="true" />
-              <span>{isAr ? 'الهدف' : 'Focus'}</span>
-              <CaretDown size={12} weight="bold" aria-hidden="true" />
-            </button>
+            <div className="nayzak-hero-stage-copy">
+              <div className="nayzak-hero-top-pills">
+                <span className="nayzak-comic-ribbon">
+                  {wkAllDone
+                    ? isAr
+                      ? 'بطل اليوم!'
+                      : 'TODAY CLEARED!'
+                    : isAr
+                    ? 'تحدّي نيزك اليومي'
+                    : "NAYZAK'S CHALLENGE"}
+                </span>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {!isPro && (
+                    <button
+                      type="button"
+                      className="lum-pro-inline-chip"
+                      onClick={() => {
+                        playSfx?.('tap');
+                        openPaywall?.();
+                      }}
+                    >
+                      <Crown size={12} weight="fill" color="#FFB012" aria-hidden="true" />
+                      <span>{isAr ? 'تدريب مخصص · PRO' : 'Custom Coach · PRO'}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="ed-focus-btn"
+                    onClick={() => {
+                      playSfx?.('tap');
+                      setShowGoalPicker((v) => !v);
+                    }}
+                    aria-expanded={showGoalPicker}
+                  >
+                    <SlidersHorizontal size={14} weight="bold" aria-hidden="true" />
+                    <span>{isAr ? 'الهدف' : 'Focus'}</span>
+                    <CaretDown size={12} weight="bold" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <h2 className="lum-hero-title">
+                {wkAllDone
+                  ? isAr
+                    ? 'اكتملت جلسة اليوم'
+                    : 'Session Complete'
+                  : isAr
+                  ? currentGoal.ar
+                  : currentGoal.en}
+              </h2>
+
+              <p className="nayzak-hero-speech">
+                {wkAllDone
+                  ? isAr
+                    ? 'نيزك: «عمل رائع! حافظت على شعلتك اليوم وأنهيت الجولات الثلاث.»'
+                    : 'Nayzak: “Bullseye! All three rounds beaten — see you tomorrow!”'
+                  : isAr
+                  ? `نيزك: «٣ جولات سريعة تنشّط عقلك — أنجزت ${wkDoneCount} من ${wkTotal}»`
+                  : `Nayzak: “Three crisp rounds (~10 min) — ${wkDoneCount} of ${wkTotal} complete.”`}
+              </p>
+            </div>
           </div>
 
           {showGoalPicker && (
@@ -544,7 +578,7 @@ export default function HomeScreen() {
 
         {/* 2. Secondary Lumosity-Style Modular Grid (Focus + Explore) */}
         <section className="lum-secondary-grid" aria-label={isAr ? 'المزيد من التدريبات' : 'More workouts'}>
-          {/* Card A: Recommended Focus */}
+          {/* Card A: Recommended Focus (Guarded by Canonical Nayzak Family Member) */}
           <button
             type="button"
             className="lum-module-card lum-module-card--focus"
@@ -555,21 +589,32 @@ export default function HomeScreen() {
             }}
           >
             <div className="lum-module-top">
-              <span
-                className="lum-tile-icon"
-                style={{ backgroundColor: recMeta.color }}
-                aria-hidden="true"
-              >
-                <RecIcon size={21} weight="fill" color="#FFFFFF" />
-              </span>
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="lum-tile-icon"
+                  style={{ backgroundColor: recMeta.color }}
+                  aria-hidden="true"
+                >
+                  <RecIcon size={21} weight="fill" color="#FFFFFF" />
+                </span>
+                {recGuardian && (
+                  <span className="nayzak-mini-guardian">
+                    <img
+                      src={recGuardian.avatarUrl}
+                      alt={isAr ? recGuardian.nameAr : recGuardian.nameEn}
+                      draggable="false"
+                    />
+                  </span>
+                )}
+              </div>
               <span className="lum-module-badge">
                 {ratedDomains.length > 0
                   ? isAr
                     ? 'توصية اليوم'
                     : 'FOCUS AREA'
                   : isAr
-                  ? 'نقطة البداية'
-                  : 'STARTER'}
+                  ? `مع ${recGuardian?.nameAr || ''}`
+                  : `WITH ${recGuardian?.nameEn?.toUpperCase() || ''}`}
               </span>
             </div>
 

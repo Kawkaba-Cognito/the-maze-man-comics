@@ -302,10 +302,14 @@ export default function ProfileScreen() {
 
   const resolvedAvatar =
     profileData.avatar &&
-    (profileData.avatar.includes('/') || profileData.avatar.includes('.')) &&
-    !profileData.avatar.includes('nayzak_unified_leader')
+    (profileData.avatar.includes('Assets/brand/cast-2026/') ||
+      (profileData.avatar.includes('/') && !profileData.avatar.includes('nayzak_unified_leader') && !profileData.avatar.includes('kawkab.webp')))
       ? assetUrl(profileData.avatar)
-      : assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp');
+      : assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
+
+  const selectedCastMember =
+    NAYZAK_CAST.find((c) => assetUrl(c.avatarUrl) === resolvedAvatar || c.avatarUrl === resolvedAvatar) ||
+    NAYZAK_CAST[0];
 
   const StrongestIcon = strongestDomain ? DOMAIN_DISPLAY[strongestDomain.id].Icon : null;
   const FocusIcon = focusDomain ? DOMAIN_DISPLAY[focusDomain.id].Icon : null;
@@ -326,298 +330,312 @@ export default function ProfileScreen() {
           </div>
         </section>
 
-        {/* Identity & Level Card */}
-        <section className="duo-identity-card">
-          <div
-            className="duo-avatar-wrapper"
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              playSfx?.('tap');
-              setShowPicker((v) => !v);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                playSfx?.('tap');
-                setShowPicker((v) => !v);
-              }
-            }}
-            title={isAr ? 'انقر لتغيير الشخصية' : 'Click to change avatar'}
-          >
-            <div className="duo-avatar-circle">
-              <img
-                src={resolvedAvatar}
-                alt={profileData.username}
-                draggable="false"
-                onError={(e) => {
-                  const fallback = assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp');
-                  if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+        <div className="lum-insights-bento">
+          {/* Left Column: Compact Profile, 3 Stat Tiles, and Settings */}
+          <div className="lum-insights-col-left">
+            {/* Identity & Level Card */}
+            <section className="duo-identity-card lum-identity-compact">
+              <div
+                className="duo-avatar-wrapper"
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  playSfx?.('tap');
+                  setShowPicker((v) => !v);
                 }}
-              />
-            </div>
-            <span className="duo-level-badge">
-              {isAr ? `مستوى ${lv}` : `LVL ${lv}`}
-            </span>
-          </div>
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    playSfx?.('tap');
+                    setShowPicker((v) => !v);
+                  }
+                }}
+                title={isAr ? 'انقر لتغيير الشخصية' : 'Click to change avatar'}
+              >
+                <div className="duo-avatar-circle">
+                  <img
+                    src={resolvedAvatar}
+                    alt={profileData.username}
+                    draggable="false"
+                    onError={(e) => {
+                      const fallback = assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
+                      if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                    }}
+                  />
+                </div>
+                <span className="duo-level-badge">
+                  {isAr ? `مستوى ${lv}` : `LVL ${lv}`}
+                </span>
+              </div>
 
-          <h2 className="duo-profile-name">{profileData.username}</h2>
+              <h2 className="duo-profile-name">{profileData.username}</h2>
+              {selectedCastMember && (
+                <div className="nayzak-profile-cast-tag">
+                  <span>{isAr ? selectedCastMember.nameAr : selectedCastMember.nameEn}</span>
+                  <span>·</span>
+                  <span>{isAr ? selectedCastMember.roleAr : selectedCastMember.roleEn}</span>
+                </div>
+              )}
 
-          {/* XP Progress Bar */}
-          <div className="duo-xp-container">
-            <div className="duo-xp-track">
-              <div className="duo-xp-fill" style={{ width: `${Math.max(6, pct)}%` }} />
-            </div>
-            <div className="duo-xp-label">
-              {globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP · {xpToNext(globalXP)} {isAr ? 'للمستوى التالي' : 'to next level'}
-            </div>
-          </div>
+              {/* XP Progress Bar */}
+              <div className="duo-xp-container">
+                <div className="duo-xp-track">
+                  <div className="duo-xp-fill" style={{ width: `${Math.max(6, pct)}%` }} />
+                </div>
+                <div className="duo-xp-label">
+                  {globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP · {xpToNext(globalXP)} {isAr ? 'للمستوى التالي' : 'to next level'}
+                </div>
+              </div>
 
-          {/* Avatar Cast Picker */}
-          {showPicker && (
-            <div className="duo-pose-picker">
-              {NAYZAK_CAST.map((c) => {
-                const selected = resolvedAvatar === assetUrl(c.avatarUrl);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`duo-pose-btn ${selected ? 'is-selected' : ''}`}
-                    onClick={() => setAvatar(c.avatarUrl)}
-                    title={isAr ? c.nameAr : c.nameEn}
+              {/* Avatar Cast Picker */}
+              {showPicker && (
+                <div className="duo-pose-picker">
+                  {NAYZAK_CAST.map((c) => {
+                    const selected = resolvedAvatar === assetUrl(c.avatarUrl);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`duo-pose-btn ${selected ? 'is-selected' : ''}`}
+                        onClick={() => setAvatar(c.avatarUrl)}
+                        title={isAr ? c.nameAr : c.nameEn}
+                      >
+                        <img src={assetUrl(c.avatarUrl)} alt={isAr ? c.nameAr : c.nameEn} draggable="false" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* 3 Compact Stat Cards */}
+            <section className="duo-stats-grid lum-stats-compact">
+              <div className="duo-stat-card">
+                <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Flame size={18} weight="fill" color="#FF7800" aria-hidden="true" />
+                  <span>{displayStreak}</span>
+                </span>
+                <span className="duo-stat-card-lbl">{isAr ? 'الأيام' : 'Streak'}</span>
+              </div>
+              <div className="duo-stat-card">
+                <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Lightning size={18} weight="fill" color="#0B63CE" aria-hidden="true" />
+                  <span>{globalXP}</span>
+                </span>
+                <span className="duo-stat-card-lbl">{isAr ? 'النقاط' : 'Total XP'}</span>
+              </div>
+              <div className="duo-stat-card">
+                <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Trophy size={18} weight="fill" color="#FFB012" aria-hidden="true" />
+                  <span>{totalSessionsCount}</span>
+                </span>
+                <span className="duo-stat-card-lbl">{isAr ? 'التدريبات' : 'Sessions'}</span>
+              </div>
+            </section>
+
+            {/* Settings Card */}
+            <section className="duo-section-card">
+              <h3 className="duo-card-title" style={{ marginBottom: 12 }}>{isAr ? 'الإعدادات' : 'Settings'}</h3>
+
+              <div className="duo-row-item">
+                <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+                  <span className="lum-tile-icon lum-tile-icon--xs" style={{ backgroundColor: '#0B63CE' }} aria-hidden="true">
+                    <Globe size={16} weight="fill" color="#FFFFFF" />
+                  </span>
+                  <span>{isAr ? 'اللغة' : 'Language'}</span>
+                </span>
+                <button
+                  type="button"
+                  className="duo-action-btn"
+                  onClick={() => {
+                    playSfx?.('click');
+                    toggleLang?.();
+                  }}
+                >
+                  {isAr ? 'العربية → English' : 'English → العربية'}
+                </button>
+              </div>
+
+              <div className="duo-row-item">
+                <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+                  <span
+                    className="lum-tile-icon lum-tile-icon--xs"
+                    style={{ backgroundColor: sfxEnabled ? '#1CB0F6' : '#64748B' }}
+                    aria-hidden="true"
                   >
-                    <img src={assetUrl(c.avatarUrl)} alt={isAr ? c.nameAr : c.nameEn} draggable="false" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* 3 Stat Cards */}
-        <section className="duo-stats-grid">
-          <div className="duo-stat-card">
-            <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Flame size={20} weight="fill" color="#FF7800" aria-hidden="true" />
-              <span>{displayStreak}</span>
-            </span>
-            <span className="duo-stat-card-lbl">{isAr ? 'الأيام' : 'Streak'}</span>
-          </div>
-          <div className="duo-stat-card">
-            <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Lightning size={20} weight="fill" color="#0B63CE" aria-hidden="true" />
-              <span>{globalXP}</span>
-            </span>
-            <span className="duo-stat-card-lbl">{isAr ? 'النقاط' : 'Total XP'}</span>
-          </div>
-          <div className="duo-stat-card">
-            <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Trophy size={20} weight="fill" color="#FFB012" aria-hidden="true" />
-              <span>{totalSessionsCount}</span>
-            </span>
-            <span className="duo-stat-card-lbl">{isAr ? 'التدريبات' : 'Sessions'}</span>
-          </div>
-        </section>
-
-        {/* Cognitive Profile Section (Lumosity LPI-style Live Ratings + 6-Axis Radar) */}
-        <section className="duo-section-card">
-          <div className="duo-card-header">
-            <div>
-              <h3 className="duo-card-title">{isAr ? 'المؤشر الإدراكي' : 'Cognitive Index'}</h3>
-              <span className="duo-cog-subtitle">
-                {isAr ? 'مقياس المهارات عبر المجالات الستة (٠–١٠٠٠)' : 'Skill rating across all 6 cognitive domains (0–1000)'}
-              </span>
-            </div>
-            {liveIndex != null && liveBand ? (
-              <span className="duo-tag" style={{ borderColor: liveBand.color, color: liveBand.color }}>
-                {liveIndex} · {isAr ? liveBand.ar : liveBand.en}
-              </span>
-            ) : latest?.overall != null ? (
-              <span className="duo-tag">{latest.overall} / 100</span>
-            ) : null}
-          </div>
-
-          <CognitiveRadarChart
-            values={radarValues}
-            isAr={isAr}
-            isDark={isDark}
-            hasAnyRating={hasAnyRating}
-          />
-
-          {strongestDomain && focusDomain && StrongestIcon && FocusIcon && (
-            <div className="duo-cog-insights">
-              <div className="duo-cog-insight-pill is-best">
-                <StrongestIcon size={15} weight="duotone" aria-hidden="true" />
-                <span>
-                  {isAr ? 'نقطة القوة: ' : 'Strongest: '}
-                  <strong>{isAr ? DOMAIN_DISPLAY[strongestDomain.id].ar : DOMAIN_DISPLAY[strongestDomain.id].en}</strong>
+                    {sfxEnabled ? (
+                      <SpeakerHigh size={16} weight="fill" color="#FFFFFF" />
+                    ) : (
+                      <SpeakerSlash size={16} weight="fill" color="#FFFFFF" />
+                    )}
+                  </span>
+                  <span>{isAr ? 'الأصوات التفاعلية' : 'Sound Effects'}</span>
                 </span>
+                <Toggle
+                  checked={sfxEnabled}
+                  aria-label={isAr ? 'الأصوات التفاعلية' : 'Sound Effects'}
+                  onChange={() => {
+                    playSfx?.('click');
+                    setSfxEnabled(!sfxEnabled);
+                  }}
+                />
               </div>
-              <div className="duo-cog-insight-pill is-focus">
-                <FocusIcon size={15} weight="duotone" aria-hidden="true" />
-                <span>
-                  {isAr ? 'ركّز على: ' : 'Focus Next: '}
-                  <strong>{isAr ? DOMAIN_DISPLAY[focusDomain.id].ar : DOMAIN_DISPLAY[focusDomain.id].en}</strong>
-                </span>
-              </div>
-            </div>
-          )}
 
-          {liveIndex != null || latest ? (
-            <div className="duo-cog-list">
-              {ASSESS_DOMAINS.map((d) => {
-                const liveVal = liveDomainRatings[d];
-                const fallbackVal = typeof assessScores[d] === 'number' ? assessScores[d] * 10 : null;
-                const displayVal = liveVal ?? fallbackVal;
-                const barPct = typeof displayVal === 'number' ? Math.min(100, Math.round(displayVal / 10)) : 0;
-                const col = DOMAIN_DISPLAY[d]?.color ?? '#0B63CE';
-                const DomainIcon = DOMAIN_DISPLAY[d].Icon;
-                return (
-                  <div key={d} className="duo-cog-row">
-                    <span className="duo-cog-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, width: 92 }}>
-                      <DomainIcon size={15} weight="duotone" color={col} aria-hidden="true" />
-                      <span>{isAr ? DOMAIN_DISPLAY[d].ar : DOMAIN_DISPLAY[d].en}</span>
-                    </span>
-                    <div className="duo-xp-track duo-cog-track">
-                      <div className="duo-cog-fill" style={{ width: `${barPct}%`, background: col }} />
-                    </div>
-                    <span className="duo-cog-score">
-                      {liveVal ?? (typeof assessScores[d] === 'number' ? assessScores[d] : '—')}
+              <div className="duo-row-item">
+                <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+                  <span
+                    className="lum-tile-icon lum-tile-icon--xs"
+                    style={{ backgroundColor: isDark ? '#4F46E5' : '#FF7800' }}
+                    aria-hidden="true"
+                  >
+                    {isDark ? (
+                      <Moon size={16} weight="fill" color="#FFFFFF" />
+                    ) : (
+                      <Sun size={16} weight="fill" color="#FFFFFF" />
+                    )}
+                  </span>
+                  <span>{isAr ? 'المظهر الداكن' : 'Dark Mode'}</span>
+                </span>
+                <Toggle
+                  checked={isDark}
+                  aria-label={isAr ? 'المظهر الداكن' : 'Dark Mode'}
+                  onChange={() => {
+                    playSfx?.('click');
+                    setAppTheme(isDark ? 'light' : 'dark');
+                  }}
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column: Cognitive Radar + PRO Deep Analytics Cue */}
+          <div className="lum-insights-col-right">
+            <section className="duo-section-card lum-radar-card">
+              <div className="duo-card-header">
+                <div>
+                  <h3 className="duo-card-title">{isAr ? 'المؤشر الإدراكي' : 'Cognitive Index'}</h3>
+                  <span className="duo-cog-subtitle">
+                    {isAr ? 'مقياس المهارات عبر المجالات الستة (٠–١٠٠٠)' : 'Skill rating across all 6 cognitive domains (0–1000)'}
+                  </span>
+                </div>
+                {liveIndex != null && liveBand ? (
+                  <span className="duo-tag" style={{ borderColor: liveBand.color, color: liveBand.color }}>
+                    {liveIndex} · {isAr ? liveBand.ar : liveBand.en}
+                  </span>
+                ) : latest?.overall != null ? (
+                  <span className="duo-tag">{latest.overall} / 100</span>
+                ) : null}
+              </div>
+
+              <CognitiveRadarChart
+                values={radarValues}
+                isAr={isAr}
+                isDark={isDark}
+                hasAnyRating={hasAnyRating}
+              />
+
+              {strongestDomain && focusDomain && StrongestIcon && FocusIcon && (
+                <div className="duo-cog-insights">
+                  <div className="duo-cog-insight-pill is-best">
+                    <StrongestIcon size={15} weight="duotone" aria-hidden="true" />
+                    <span>
+                      {isAr ? 'نقطة القوة: ' : 'Strongest: '}
+                      <strong>{isAr ? DOMAIN_DISPLAY[strongestDomain.id].ar : DOMAIN_DISPLAY[strongestDomain.id].en}</strong>
                     </span>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="duo-empty-note">
-              {isAr
-                ? 'أكمل تمرين اليوم أو أي لعبة لبناء رادار مؤشرك الإدراكي عبر المجالات الستة!'
-                : "Complete Today's Workout or any game to chart your Cognitive Index across all 6 domains."}
-            </p>
-          )}
-        </section>
+                  <div className="duo-cog-insight-pill is-focus">
+                    <FocusIcon size={15} weight="duotone" aria-hidden="true" />
+                    <span>
+                      {isAr ? 'ركّز على: ' : 'Focus Next: '}
+                      <strong>{isAr ? DOMAIN_DISPLAY[focusDomain.id].ar : DOMAIN_DISPLAY[focusDomain.id].en}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
 
-        {/* Settings Card */}
-        <section className="duo-section-card">
-          <h3 className="duo-card-title" style={{ marginBottom: 12 }}>{isAr ? 'الإعدادات' : 'Settings'}</h3>
+              {liveIndex != null || latest ? (
+                <div className="duo-cog-list">
+                  {ASSESS_DOMAINS.map((d) => {
+                    const liveVal = liveDomainRatings[d];
+                    const fallbackVal = typeof assessScores[d] === 'number' ? assessScores[d] * 10 : null;
+                    const displayVal = liveVal ?? fallbackVal;
+                    const barPct = typeof displayVal === 'number' ? Math.min(100, Math.round(displayVal / 10)) : 0;
+                    const col = DOMAIN_DISPLAY[d]?.color ?? '#0B63CE';
+                    const DomainIcon = DOMAIN_DISPLAY[d].Icon;
+                    return (
+                      <div key={d} className="duo-cog-row">
+                        <span className="duo-cog-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, width: 92 }}>
+                          <DomainIcon size={15} weight="duotone" color={col} aria-hidden="true" />
+                          <span>{isAr ? DOMAIN_DISPLAY[d].ar : DOMAIN_DISPLAY[d].en}</span>
+                        </span>
+                        <div className="duo-xp-track duo-cog-track">
+                          <div className="duo-cog-fill" style={{ width: `${barPct}%`, background: col }} />
+                        </div>
+                        <span className="duo-cog-score">
+                          {liveVal ?? (typeof assessScores[d] === 'number' ? assessScores[d] : '—')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="duo-empty-note">
+                  {isAr
+                    ? 'أكمل تمرين اليوم أو أي لعبة لبناء رادار مؤشرك الإدراكي عبر المجالات الستة!'
+                    : "Complete Today's Workout or any game to chart your Cognitive Index across all 6 domains."}
+                </p>
+              )}
+            </section>
 
-          <div className="duo-row-item">
-            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
-              <span className="lum-tile-icon lum-tile-icon--xs" style={{ backgroundColor: '#0B63CE' }} aria-hidden="true">
-                <Globe size={16} weight="fill" color="#FFFFFF" />
-              </span>
-              <span>{isAr ? 'اللغة' : 'Language'}</span>
-            </span>
-            <button
-              type="button"
-              className="duo-action-btn"
-              onClick={() => {
-                playSfx?.('click');
-                toggleLang?.();
-              }}
-            >
-              {isAr ? 'العربية → English' : 'English → العربية'}
-            </button>
-          </div>
-
-          <div className="duo-row-item">
-            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
-              <span
-                className="lum-tile-icon lum-tile-icon--xs"
-                style={{ backgroundColor: sfxEnabled ? '#1CB0F6' : '#64748B' }}
-                aria-hidden="true"
+            {/* Value-Driven PRO Benchmark Strip */}
+            <section className="lum-pro-insight-card">
+              <div className="ed-pro-copy">
+                <div className="ed-pro-head">
+                  <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
+                  <h3>
+                    {isPro
+                      ? isAr
+                        ? 'تحليلات Nayzak PRO مفعّلة'
+                        : 'Nayzak PRO Analytics Active'
+                      : isAr
+                        ? 'السجل التاريخي والمقارنة المعرفية · PRO'
+                        : 'Historical Trends & Benchmarks · PRO'}
+                  </h3>
+                  {isPro && <CheckCircle size={15} weight="fill" color="#1CB0F6" aria-hidden="true" />}
+                </div>
+                <p>
+                  {isPro
+                    ? isAr
+                      ? `جميع التمارين والألغاز وتحليلات الرادار الكاملة مفتوحة${proPlan === 'monthly' ? ' (الشهرية)' : proPlan === 'annual' ? ' (السنوية)' : ''}.`
+                      : `All 18 drills, 19 puzzles, and 6-domain NPI benchmarks unlocked${proPlan === 'monthly' ? ' (Monthly)' : proPlan === 'annual' ? ' (Annual)' : ''}.`
+                    : isAr
+                      ? 'قارن تطورك الزمني عبر كل مجال إدراكي واحصل على تدريبات مخصصة.'
+                      : 'Track 90-day domain progression, percentiles & custom weak-spot focus.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="ed-pro-btn"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => {
+                  playSfx?.('ding');
+                  openPaywall?.();
+                }}
               >
-                {sfxEnabled ? (
-                  <SpeakerHigh size={16} weight="fill" color="#FFFFFF" />
-                ) : (
-                  <SpeakerSlash size={16} weight="fill" color="#FFFFFF" />
-                )}
-              </span>
-              <span>{isAr ? 'الأصوات التفاعلية' : 'Sound Effects'}</span>
-            </span>
-            <Toggle
-              checked={sfxEnabled}
-              aria-label={isAr ? 'الأصوات التفاعلية' : 'Sound Effects'}
-              onChange={() => {
-                playSfx?.('click');
-                setSfxEnabled(!sfxEnabled);
-              }}
-            />
+                <Sparkle size={14} weight="fill" aria-hidden="true" />
+                <span>
+                  {isPro
+                    ? isAr
+                      ? 'إدارة'
+                      : 'Manage'
+                    : isAr
+                      ? 'جرّب مجاناً'
+                      : 'Try PRO'}
+                </span>
+              </button>
+            </section>
           </div>
-
-          <div className="duo-row-item">
-            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
-              <span
-                className="lum-tile-icon lum-tile-icon--xs"
-                style={{ backgroundColor: isDark ? '#4F46E5' : '#FF7800' }}
-                aria-hidden="true"
-              >
-                {isDark ? (
-                  <Moon size={16} weight="fill" color="#FFFFFF" />
-                ) : (
-                  <Sun size={16} weight="fill" color="#FFFFFF" />
-                )}
-              </span>
-              <span>{isAr ? 'المظهر الداكن' : 'Dark Mode'}</span>
-            </span>
-            <Toggle
-              checked={isDark}
-              aria-label={isAr ? 'المظهر الداكن' : 'Dark Mode'}
-              onChange={() => {
-                playSfx?.('click');
-                setAppTheme(isDark ? 'light' : 'dark');
-              }}
-            />
-          </div>
-        </section>
-
-        {/* Mobile-only Nayzak PRO Card (Desktop shows PRO inside Left Rail) */}
-        <section className="ed-pro-card md:hidden">
-          <div className="ed-pro-copy">
-            <div className="ed-pro-head">
-              <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
-              <h3>
-                {isPro
-                  ? isAr
-                    ? 'Nayzak PRO مفعّل'
-                    : 'Nayzak PRO Active'
-                  : isAr
-                    ? 'نيزك PRO'
-                    : 'Nayzak PRO'}
-              </h3>
-              {isPro && <CheckCircle size={15} weight="fill" color="#1CB0F6" aria-hidden="true" />}
-            </div>
-            <p>
-              {isPro
-                ? isAr
-                  ? `جميع التمارين والألغاز وتحليلات الرادار الإدراكي مفتوحة${proPlan === 'monthly' ? ' (الباقة الشهرية)' : proPlan === 'annual' ? ' (الباقة السنوية)' : ''}.`
-                  : `All 18 drills, 19 puzzles, and full 6-domain NPI insights unlocked${proPlan === 'monthly' ? ' (Monthly plan)' : proPlan === 'annual' ? ' (Annual plan)' : ''}.`
-                : isAr
-                  ? 'افتح جميع التمارين الإكلينيكية الـ 18 و19 لغزاً وتقارير الرادار الكاملة.'
-                  : 'Unlock all 18 drills, 19 mind puzzles & full Cognitive Radar insights.'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="ed-pro-btn"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            onClick={() => {
-              playSfx?.('ding');
-              openPaywall?.();
-            }}
-          >
-            <Sparkle size={14} weight="fill" aria-hidden="true" />
-            <span>
-              {isPro
-                ? isAr
-                  ? 'إدارة المعاينة'
-                  : 'Manage'
-                : isAr
-                  ? 'ترقية'
-                  : 'Upgrade'}
-            </span>
-          </button>
-        </section>
+        </div>
       </main>
     </div>
   );

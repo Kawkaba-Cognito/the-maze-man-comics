@@ -26,7 +26,11 @@ export default function NayzakHeader({
   const shouldShowPro = showPro ?? !onBack;
 
   return (
-    <header className={`nayzak-header duo-styled-header ${className}`} style={style} dir={isAr ? 'rtl' : 'ltr'}>
+    <header
+      className={`nayzak-header duo-styled-header${onBack ? ' is-subview' : ' is-main-view'} ${className}`}
+      style={style}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
       <div className="duo-header-inner">
         {/* Brand Slot / Back Button */}
         <div className="nayzak-header-slot nayzak-header-slot--start">

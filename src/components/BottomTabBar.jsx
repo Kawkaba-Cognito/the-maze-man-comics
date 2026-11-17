@@ -91,7 +91,7 @@ export function DesktopNavRail() {
           <div className="nayzak-rail-pro-card">
             <div className="nayzak-rail-pro-top">
               <img
-                src={assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp')}
+                src={assetUrl('Assets/brand/cast-2026/shofata-cheer.webp')}
                 alt=""
                 draggable="false"
                 className="nayzak-rail-mascot"
@@ -99,7 +99,7 @@ export function DesktopNavRail() {
               <div>
                 <div className="nayzak-rail-pro-title">
                   <Crown size={13} weight="fill" color="#FFB012" aria-hidden="true" />
-                  <span>{isAr ? 'نيزك PRO' : 'Nayzak PRO'}</span>
+                  <span>{isAr ? 'عائلة نيزك PRO' : 'Nayzak PRO'}</span>
                 </div>
                 <p className="nayzak-rail-pro-sub">
                   {isAr ? 'إحصائيات وتدريبات بلا حدود' : 'Full insights & unlimited training'}

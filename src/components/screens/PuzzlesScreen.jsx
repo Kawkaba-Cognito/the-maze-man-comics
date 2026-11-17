@@ -3,7 +3,6 @@ import { List, ListItem, Button } from 'konsta/react';
 import {
   Play,
   PuzzlePiece,
-  RocketLaunch,
   Hash,
   UsersThree,
   Cube,
@@ -31,6 +30,7 @@ import {
 import { getLazyPuzzle } from '../../features/puzzles/lazyGames';
 import NayzakHeader from '../shared/NayzakHeader';
 import { lazyWithRetry } from '../../lib/lazyWithRetry';
+import { assetUrl } from '../../lib/assetUrl';
 
 const VoidRunnerLazy = lazyWithRetry(
   () => import('../../features/puzzles/games/void-runner'),
@@ -38,10 +38,42 @@ const VoidRunnerLazy = lazyWithRetry(
 );
 
 const CATEGORY_META = {
-  numbers: { color: '#0B63CE', Icon: Hash },
-  logic: { color: '#4F46E5', Icon: PuzzlePiece },
-  spatial: { color: '#0D9488', Icon: Cube },
-  group: { color: '#FF7800', Icon: UsersThree },
+  numbers: {
+    color: '#0B63CE',
+    softBg: '#EFF6FF',
+    art: 'Assets/puzzle-studio/category-art-2026/numbers.webp',
+    buddyImg: 'Assets/brand/cast-2026/dalfin-wise.webp',
+    buddyEn: 'Dalfin',
+    buddyAr: 'دلفين',
+    Icon: Hash,
+  },
+  logic: {
+    color: '#4F46E5',
+    softBg: '#EEF2FF',
+    art: 'Assets/puzzle-studio/category-art-2026/logic.webp',
+    buddyImg: 'Assets/brand/cast-2026/nayzak-think.webp',
+    buddyEn: 'Nayzak',
+    buddyAr: 'نيزك',
+    Icon: PuzzlePiece,
+  },
+  spatial: {
+    color: '#0D9488',
+    softBg: '#F0FDFA',
+    art: 'Assets/puzzle-studio/category-art-2026/spatial.webp',
+    buddyImg: 'Assets/brand/cast-2026/abuasnan-boy.webp',
+    buddyEn: 'Abu Asnan',
+    buddyAr: 'أبو أسنان',
+    Icon: Cube,
+  },
+  group: {
+    color: '#FF7800',
+    softBg: '#FFF4E5',
+    art: 'Assets/puzzle-studio/category-art-2026/group.webp',
+    buddyImg: 'Assets/brand/cast-2026/shofata-cheer.webp',
+    buddyEn: 'Shofata',
+    buddyAr: 'شوفاتة',
+    Icon: UsersThree,
+  },
 };
 
 const PUZZLE_ICONS = {
@@ -250,67 +282,44 @@ export default function PuzzlesScreen() {
           </div>
         </section>
 
-        {/* Featured Spotlight Card (Void Runner) */}
-        <List strong inset className="w-full !mx-0 !mt-0 !mb-5">
-          <ListItem
-            link
-            chevron={false}
-            strongTitle
-            titleFontSizeIos="text-[16.5px]"
-            linkProps={{
-              role: 'button',
-              tabIndex: 0,
-              onKeyDown: (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  playSfx?.('pop');
-                  setVoidRunnerOpen(true);
-                }
-              },
-            }}
+        {/* Featured Spotlight Card — Hosted by Grandpa Dalfin */}
+        <div className="nayzak-riddle-spotlight">
+          <button
+            type="button"
+            className="nayzak-spotlight-btn"
             onClick={() => {
               playSfx?.('pop');
               setVoidRunnerOpen(true);
             }}
-            media={
-              <span
-                className="lum-tile-icon shrink-0"
-                style={{ backgroundColor: '#FF7800' }}
-                aria-hidden="true"
-              >
-                <RocketLaunch size={22} weight="fill" color="#FFFFFF" />
+          >
+            <div className="nayzak-spotlight-char" aria-hidden="true">
+              <img
+                src={assetUrl('Assets/brand/cast-2026/dalfin-wise.webp')}
+                alt=""
+                draggable="false"
+              />
+            </div>
+
+            <div className="nayzak-spotlight-body">
+              <span className="nayzak-comic-ribbon nayzak-comic-ribbon--sm">
+                {isAr ? 'تحدّي الجد دلفين' : "DALFIN'S FEATURED"}
               </span>
-            }
-            header={
-              <span className="font-extrabold uppercase tracking-wider text-[11px] text-[#FF7800] dark:text-[#FFB012]">
-                {isAr ? 'مميز اليوم' : 'Daily Featured'}
-              </span>
-            }
-            title={isAr ? 'عدّاء الفراغ' : 'Void Runner'}
-            subtitle={
-              isAr
-                ? 'رحلة فضائية سريعة لاختبار ردة الفعل والتركيز'
-                : 'Fast spatial flight challenge'
-            }
-            after={
-              <Button
-                small
-                rounded
-                inline
-                type="button"
-                className="nayzak-konsta-cta !px-3.5 gap-1.5 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playSfx?.('pop');
-                  setVoidRunnerOpen(true);
-                }}
-              >
-                <Play size={12} weight="fill" aria-hidden="true" />
-                <span>{isAr ? 'العب' : 'Play'}</span>
-              </Button>
-            }
-          />
-        </List>
+              <h2 className="nayzak-spotlight-title">
+                {isAr ? 'عدّاء الفراغ · Void Runner' : 'Void Runner'}
+              </h2>
+              <p className="nayzak-spotlight-sub">
+                {isAr
+                  ? '«أسرع مما تظن! اختبر ردة فعلك وتفادَ العقبات الفضائية»'
+                  : '“Think your reflexes beat mine? Dodge every obstacle!”'}
+              </p>
+            </div>
+
+            <span className="nayzak-spotlight-play">
+              <Play size={14} weight="fill" aria-hidden="true" />
+              <span>{isAr ? 'العب' : 'Play'}</span>
+            </span>
+          </button>
+        </div>
 
         <div className="lum-section-row">
           <h2 className="lum-section-title">
@@ -321,52 +330,66 @@ export default function PuzzlesScreen() {
           </span>
         </div>
 
-        <section className="lum-domains-grid" aria-label={isAr ? 'فئات الألغاز' : 'Puzzle categories'}>
+        <section className="lum-domains-grid lum-puzzles-grid" aria-label={isAr ? 'فئات الألغاز' : 'Puzzle categories'}>
           {PUZZLE_CATEGORIES.map((item) => {
             const meta = CATEGORY_META[item.id] || CATEGORY_META.logic;
-            const CatIcon = meta.Icon;
             const count = puzzlesInCategory(item.id).length;
 
             return (
               <button
                 key={item.id}
                 type="button"
-                className="lum-domain-card"
+                className="lum-domain-card lum-domain-card--illustrated"
+                style={{ '--dom-color': meta.color, '--dom-soft': meta.softBg }}
                 onClick={() => {
                   playSfx?.('pop');
                   setCategory(item.id);
                 }}
               >
-                <div className="lum-domain-card-top">
-                  <span
-                    className="lum-tile-icon"
-                    style={{ backgroundColor: meta.color }}
-                    aria-hidden="true"
-                  >
-                    <CatIcon size={22} weight="fill" color="#FFFFFF" />
-                  </span>
-                  <span className="lum-count-pill">
+                <div
+                  className="lum-card-stage"
+                  style={{ backgroundColor: meta.softBg }}
+                >
+                  <img
+                    src={assetUrl(meta.art)}
+                    alt=""
+                    draggable="false"
+                    className="lum-card-stage-img"
+                  />
+                  {meta.buddyImg && (
+                    <span className="nayzak-stage-guardian">
+                      <img
+                        src={assetUrl(meta.buddyImg)}
+                        alt={isAr ? meta.buddyAr : meta.buddyEn}
+                        draggable="false"
+                      />
+                      <span>{isAr ? meta.buddyAr : meta.buddyEn}</span>
+                    </span>
+                  )}
+                  <span className="lum-count-pill lum-stage-pill">
                     {isAr ? `${count} ألغاز` : `${count} puzzles`}
                   </span>
                 </div>
 
-                <div className="lum-domain-card-body">
-                  <h3 className="lum-domain-card-title">
-                    {isAr ? item.nameAr : item.name}
-                  </h3>
-                  <p className="lum-domain-card-desc">
-                    {isAr ? item.descAr : item.desc}
-                  </p>
-                </div>
+                <div className="lum-card-content">
+                  <div className="lum-domain-card-body">
+                    <h3 className="lum-domain-card-title">
+                      {isAr ? item.nameAr : item.name}
+                    </h3>
+                    <p className="lum-domain-card-desc">
+                      {isAr ? item.descAr : item.desc}
+                    </p>
+                  </div>
 
-                <div className="lum-domain-card-foot">
-                  <span className="lum-domain-prog-lbl">
-                    {isAr ? 'تحديات ذهنية' : 'Mind Studio'}
-                  </span>
-                  <span className="lum-domain-cta" style={{ color: meta.color }}>
-                    <span>{isAr ? 'استكشف' : 'Explore'}</span>
-                    <NavArrow size={14} weight="bold" aria-hidden="true" />
-                  </span>
+                  <div className="lum-domain-card-foot">
+                    <span className="lum-domain-prog-lbl">
+                      {isAr ? 'تحديات ذهنية' : 'Mind Studio'}
+                    </span>
+                    <span className="lum-domain-cta" style={{ color: meta.color }}>
+                      <span>{isAr ? 'استكشف' : 'Explore'}</span>
+                      <NavArrow size={14} weight="bold" aria-hidden="true" />
+                    </span>
+                  </div>
                 </div>
               </button>
             );

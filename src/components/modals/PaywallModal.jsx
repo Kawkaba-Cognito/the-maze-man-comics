@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import NayzakLogo from '../shared/NayzakLogo';
+import { assetUrl } from '../../lib/assetUrl';
 import '../../styles/paywallModal.css';
 
 const VALUE_PROPS = [
@@ -156,12 +157,34 @@ export default function PaywallModal() {
           <X size={18} weight="bold" aria-hidden="true" />
         </button>
 
+        {/* Nayzak Trio Squad Showcase (Official Nayzak Games Banner Cast) */}
+        <div className="nayzak-paywall-trio" aria-hidden="true">
+          <img
+            src={assetUrl('Assets/brand/cast-2026/nayzak-host.webp')}
+            alt=""
+            draggable="false"
+            className="nayzak-paywall-trio-char is-left"
+          />
+          <img
+            src={assetUrl('Assets/brand/cast-2026/shofata-cheer.webp')}
+            alt=""
+            draggable="false"
+            className="nayzak-paywall-trio-char is-center"
+          />
+          <img
+            src={assetUrl('Assets/brand/cast-2026/zamour-spark.webp')}
+            alt=""
+            draggable="false"
+            className="nayzak-paywall-trio-char is-right"
+          />
+        </div>
+
         {/* Top Brand Emblem & Nayzak PRO Badge */}
         <div className="nayzak-paywall-brand-row">
-          <NayzakLogo variant="compact" size={34} />
+          <NayzakLogo variant="compact" size={34} showMascot={false} />
           <span className="nayzak-pro-pill">
             <Crown size={15} weight="fill" aria-hidden="true" />
-            <span>Nayzak PRO</span>
+            <span>PRO</span>
           </span>
         </div>
 

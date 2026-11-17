@@ -428,3 +428,37 @@ html[data-home-theme='dark'] .nayzak-paywall-confirm-icon {
   color: #1CB0F6;
   background: rgba(28, 176, 246, 0.16);
 }
+
+/* Official Nayzak Trio Squad Showcase inside Paywall */
+.nayzak-paywall-trio {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 82px;
+  margin: 2px auto 8px;
+  padding: 6px 14px 4px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff5d6 0%, #ffe6aa 100%);
+  border: 2px solid #0f1e33;
+  box-shadow: 0 3px 0 #0f1e33;
+  max-width: 240px;
+}
+
+.nayzak-paywall-trio-char {
+  width: 64px;
+  height: 70px;
+  object-fit: contain;
+  object-position: center bottom;
+  display: block;
+}
+
+.nayzak-paywall-trio-char.is-right {
+  width: 56px;
+  height: 60px;
+}
+
+html[data-home-theme='dark'] .nayzak-paywall-trio {
+  background: linear-gradient(135deg, #1b365d 0%, #244675 100%);
+  border-color: rgba(255, 176, 18, 0.65);
+}
