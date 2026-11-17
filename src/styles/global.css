@@ -81,7 +81,11 @@ html[data-home-theme='dark'] {
     --elev-press: inset 0 2px 6px rgba(0, 0, 0, 0.65);
 }
 
-* { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
+@layer theme, base, components, utilities;
+* { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+@layer base {
+  * { margin: 0; padding: 0; }
+}
 /* Follows the theme now — it used to be pinned to the old cosmos navy, which
    showed through as a dark rim around every light screen. */
 body { overflow: hidden; min-height: 100dvh; background-color: var(--universe-dusk); }

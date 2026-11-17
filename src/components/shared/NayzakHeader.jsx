@@ -1,5 +1,5 @@
 import React from 'react';
-import { CaretLeft, CaretRight, Flame, Lightning } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Crown, Flame, Lightning } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import NayzakLogo from './NayzakLogo';
 import '../../styles/nayzakChrome.css';
@@ -15,13 +15,15 @@ export default function NayzakHeader({
   showLogo = true,
   showStats = true,
   showLang = true,
+  showPro,
   rightActions,
   style = {},
   className = '',
 }) {
-  const { currentLang, toggleLang, playSfx, profileData, points } = useApp();
+  const { currentLang, toggleLang, playSfx, profileData, points, isPro, openPaywall } = useApp();
   const isAr = currentLang === 'ar';
   const streak = profileData?.streak || 0;
+  const shouldShowPro = showPro ?? !onBack;
 
   return (
     <header className={`nayzak-header duo-styled-header ${className}`} style={style} dir={isAr ? 'rtl' : 'ltr'}>
@@ -57,6 +59,29 @@ export default function NayzakHeader({
         {/* Action / Stats Slot */}
         <div className="nayzak-header-slot nayzak-header-slot--end">
           {rightActions}
+
+          {shouldShowPro &&
+            (isPro ? (
+              <span
+                className="nayzak-header-pro nayzak-header-pro--active"
+                title={isAr ? 'اشتراك نيزك PRO مفعّل' : 'Nayzak PRO Active'}
+                aria-label={isAr ? 'اشتراك نيزك PRO مفعّل' : 'Nayzak PRO Active'}
+              >
+                <Crown size={13} weight="fill" aria-hidden="true" />
+                <span>PRO</span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="nayzak-header-pro nayzak-header-pro--upgrade"
+                onClick={() => openPaywall?.()}
+                title={isAr ? 'الترقية إلى نيزك PRO' : 'Upgrade to Nayzak PRO'}
+                aria-label={isAr ? 'الترقية إلى نيزك PRO' : 'Upgrade to Nayzak PRO'}
+              >
+                <Crown size={13} weight="fill" color="#FFB012" aria-hidden="true" />
+                <span>PRO</span>
+              </button>
+            ))}
 
           {showStats && (
             <div className="duo-stats-group">

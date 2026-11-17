@@ -43,6 +43,30 @@ const CHAR_KEY = 'mazeman_character';
 const OWNED_KEY = 'mazeman_owned';
 const EQUIP_KEY = 'mazeman_equipped';
 const CARTOON_KEY = 'mazeman_cartoon_mode';
+export const PRO_KEY = 'nayzak_pro_v1';
+
+const DEFAULT_PRO_STATUS = { active: false, plan: null, activatedAt: null };
+
+export function readProStatus() {
+  try {
+    const raw = localStorage.getItem(PRO_KEY);
+    if (!raw) return DEFAULT_PRO_STATUS;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_PRO_STATUS;
+    const plan = parsed.plan === 'annual' || parsed.plan === 'monthly' ? parsed.plan : null;
+    const activatedAt =
+      typeof parsed.activatedAt === 'number' && Number.isFinite(parsed.activatedAt)
+        ? parsed.activatedAt
+        : null;
+    return {
+      active: Boolean(parsed.active),
+      plan,
+      activatedAt,
+    };
+  } catch {
+    return DEFAULT_PRO_STATUS;
+  }
+}
 
 function readCartoonMode() {
   try {
@@ -104,6 +128,35 @@ export function AppProvider({ children }) {
       return false;
     }
   });
+  const [proStatus, setProStatus] = useState(readProStatus);
+  const isPro = Boolean(proStatus?.active);
+
+  const activatePro = useCallback((plan = 'annual') => {
+    const normalizedPlan = plan === 'monthly' ? 'monthly' : 'annual';
+    const next = {
+      active: true,
+      plan: normalizedPlan,
+      activatedAt: Date.now(),
+    };
+    setProStatus(next);
+    try {
+      localStorage.setItem(PRO_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+    return next;
+  }, []);
+
+  const resetProPreview = useCallback(() => {
+    const next = { active: false, plan: null, activatedAt: null };
+    setProStatus(next);
+    try {
+      localStorage.removeItem(PRO_KEY);
+    } catch {
+      /* ignore */
+    }
+    return next;
+  }, []);
   const [tipOpen, setTipOpen] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE);
   const audioCtxRef = useRef(null);
@@ -367,6 +420,7 @@ export function AppProvider({ children }) {
   }, []);
   const activeImmersiveKey =
     activeTab === 'comics' || activeTab === 'home' ? 'comics'
+    : activeTab === 'domains' ? 'domains'
     : activeTab === 'puzzles' ? 'puzzles'
     : activeTab === 'workout' ? 'workout'
     : activeTab === 'habits' || activeTab === 'wellbeing' || activeTab === 'relax' ? 'relax'
@@ -516,6 +570,7 @@ export function AppProvider({ children }) {
       globalXP, points, currentLang, activeTab, immersive, setImmersive, mazeVisible, mazeEntryPending,
       activeModalGame, setActiveModalGame,
       paywallOpen, tipOpen, profileData,
+      isPro, proStatus, proPlan: proStatus?.plan ?? null, activatePro, resetProPreview, deactivatePro: resetProPreview,
       character, setCharacter,
       owned, equipped, buyItem, equipItem,
       sfxEnabled, setSfxEnabled,

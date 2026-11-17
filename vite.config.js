@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const WEB_BASE = '/the-maze-man-comics/';
@@ -201,6 +202,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       ...(!isCapacitor ? [redirectDevRootToBase(WEB_BASE)] : []),
+      tailwindcss(),
       react({
         babel: {
           plugins: [['babel-plugin-react-compiler']],

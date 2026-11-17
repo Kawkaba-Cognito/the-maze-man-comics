@@ -17,6 +17,7 @@ import './styles/puzzleStudioTheme.css';
 // for the category and game screens behind it.
 import './styles/puzzleStudioHub.css';
 import './styles/comicCartoonTheme.css';
+import './styles/konstaTheme.css';
 import './styles/duolingoTheme.css';
 import './styles/duolingoGames.css';
 import App from './App';

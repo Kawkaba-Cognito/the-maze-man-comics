@@ -1,154 +1,294 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  Crown,
+  ChartPolar,
+  Brain,
+  Sparkle,
+  ShieldCheck,
+  Check,
+  CheckCircle,
+  X,
+} from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
-import { assetUrl } from '../../lib/assetUrl';
+import NayzakLogo from '../shared/NayzakLogo';
 import '../../styles/paywallModal.css';
 
+const VALUE_PROPS = [
+  {
+    id: 'radar',
+    Icon: ChartPolar,
+    color: '#0B63CE',
+    en: 'Full 6-Domain Cognitive Radar & NPI Insights',
+    ar: 'رادار المهارات الستة الكامل ومؤشر الأداء الإدراكي NPI',
+  },
+  {
+    id: 'workouts',
+    Icon: Brain,
+    color: '#FF7800',
+    en: 'Adaptive Daily Workouts & Custom Focus Modes',
+    ar: 'تدريبات يومية متكيفة وأوضاع تركيز مخصصة',
+  },
+  {
+    id: 'library',
+    Icon: Sparkle,
+    color: '#FFB012',
+    en: 'All 18 Clinical Drills & 19 Mind Puzzles',
+    ar: 'جميع التمارين الإكلينيكية الـ 18 و19 لغزاً ذهنياً',
+  },
+  {
+    id: 'offline',
+    Icon: ShieldCheck,
+    color: '#1CB0F6',
+    en: 'Ad-Free Offline PWA Access',
+    ar: 'وصول كامل بدون إعلانات مع العمل دون إنترنت',
+  },
+];
+
+const PLANS = [
+  {
+    id: 'annual',
+    badgeEn: 'Save 45%',
+    badgeAr: 'وفّر 45%',
+    titleEn: 'Annual Pass',
+    titleAr: 'الباقة السنوية',
+    priceEn: '$39.99 / yr',
+    priceAr: '$39.99 / سنة',
+    subEn: '$3.33 / mo · Best value',
+    subAr: '$3.33 / شهر · أفضل قيمة',
+  },
+  {
+    id: 'monthly',
+    badgeEn: null,
+    badgeAr: null,
+    titleEn: 'Monthly Plan',
+    titleAr: 'الباقة الشهرية',
+    priceEn: '$5.99 / mo',
+    priceAr: '$5.99 / شهر',
+    subEn: 'Flexible monthly billing',
+    subAr: 'اشتراك شهري مرن',
+  },
+];
+
 export default function PaywallModal() {
-  const { paywallOpen, closePaywall, playSfx, currentLang } = useApp();
+  const {
+    paywallOpen,
+    closePaywall,
+    playSfx,
+    currentLang,
+    isPro,
+    proPlan,
+    activatePro,
+    deactivatePro,
+  } = useApp();
+
   const isAr = currentLang === 'ar';
+  const [selectedPlan, setSelectedPlan] = useState('annual');
+  const [confirmedPlan, setConfirmedPlan] = useState(null);
 
-  function playCartoonSound() {
-    try {
-      const audio = new Audio(assetUrl('Assets/cartoon/sfx_stamp.wav'));
-      audio.volume = 0.5;
-      audio.play().catch(() => playSfx?.('win'));
-    } catch {
-      playSfx?.('win');
+  useEffect(() => {
+    if (!paywallOpen) {
+      setConfirmedPlan(null);
+      return;
     }
+    if (proPlan === 'monthly' || proPlan === 'annual') {
+      setSelectedPlan(proPlan);
+    } else {
+      setSelectedPlan('annual');
+    }
+  }, [paywallOpen, proPlan]);
+
+  useEffect(() => {
+    if (!paywallOpen) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        playSfx?.('click');
+        closePaywall?.();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [paywallOpen, closePaywall, playSfx]);
+
+  function handleClose() {
+    playSfx?.('click');
+    closePaywall?.();
   }
 
-  function subscribe() {
-    playCartoonSound();
-    closePaywall();
-    alert(
-      isAr
-        ? '🎉 جاري الانتقال إلى بوابة الدفع الآمنة! (وضع تجريبي للمعاينة)'
-        : '🎉 Redirecting to secure checkout! (Preview demo mode)'
-    );
+  function handleSelectPlan(planId) {
+    playSfx?.('tap');
+    setSelectedPlan(planId);
   }
+
+  function handleActivate() {
+    playSfx?.('win');
+    activatePro?.(selectedPlan);
+    setConfirmedPlan(selectedPlan);
+  }
+
+  function handleDeactivatePreview() {
+    playSfx?.('click');
+    deactivatePro?.();
+    closePaywall?.();
+  }
+
+  const activePlanObj = PLANS.find((p) => p.id === (confirmedPlan || selectedPlan)) || PLANS[0];
 
   return (
     <div
       id="paywall-modal"
       className={paywallOpen ? 'show' : ''}
-      onClick={closePaywall}
+      onClick={handleClose}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="nayzak-paywall-title"
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <div
-        className="paywall-cartoon-card"
+        className="nayzak-paywall-card"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Comic Close Button */}
         <button
           type="button"
-          className="paywall-cartoon-close"
-          onClick={() => {
-            playSfx?.('click');
-            closePaywall();
-          }}
+          className="nayzak-paywall-close"
+          onClick={handleClose}
           aria-label={isAr ? 'إغلاق' : 'Close'}
         >
-          ✕
+          <X size={18} weight="bold" aria-hidden="true" />
         </button>
 
-        {/* 1. Tilted Dashed Comic Stamp (from Agreeable People Pleaser Video) */}
-        <div className="bendia-comic-stamp">
-          <span className="bendia-stamp-main">PERSONAL BOUNDARIES</span>
-          <span className="bendia-stamp-sub">
-            {isAr ? 'درع التمكين وحماية الطاقة الذهنية' : 'Master Cognitive Empowerment Shield'}
+        {/* Top Brand Emblem & Nayzak PRO Badge */}
+        <div className="nayzak-paywall-brand-row">
+          <NayzakLogo variant="compact" size={34} />
+          <span className="nayzak-pro-pill">
+            <Crown size={15} weight="fill" aria-hidden="true" />
+            <span>Nayzak PRO</span>
           </span>
         </div>
 
-        {/* 2. Hero Mascot: Cartoon Nayzak in Laurel Wreath & Obsidian Shield */}
-        <div className="paywall-mascot-row">
-          <img
-            src={assetUrl('Assets/cartoon/nayzak_unified_leader.png')}
-            alt={isAr ? 'نيزك المتصدر' : 'Nayzak Empowered Leader'}
-            className="paywall-nayzak-mascot"
-            draggable="false"
-          />
-
-          {/* Obsidian & Gold Heraldic Shield from the Video */}
-          <div className="bendia-shield-badge">
-            <span className="bendia-shield-arabic">الحُدُود</span>
-            <span className="bendia-shield-eng">BOUNDARIES</span>
+        {confirmedPlan ? (
+          <div className="nayzak-paywall-confirmed">
+            <div className="nayzak-paywall-confirm-icon" aria-hidden="true">
+              <CheckCircle size={44} weight="fill" />
+            </div>
+            <h2 id="nayzak-paywall-title" className="nayzak-paywall-title">
+              {isAr ? 'مرحباً بك في Nayzak PRO!' : 'Welcome to Nayzak PRO!'}
+            </h2>
+            <p className="nayzak-paywall-subtitle">
+              {isAr
+                ? `تم تفعيل ${activePlanObj.titleAr} (${activePlanObj.priceAr}). جميع التمارين والألغاز وتحليلات الرادار الإدراكي مفتوحة الآن.`
+                : `${activePlanObj.titleEn} (${activePlanObj.priceEn}) is active. All 18 clinical drills, 19 mind puzzles, and full 6-domain insights are unlocked.`}
+            </p>
+            <button
+              type="button"
+              className="nayzak-paywall-cta"
+              onClick={handleClose}
+            >
+              <span>{isAr ? 'متابعة التدريب' : 'Continue Training'}</span>
+            </button>
           </div>
-        </div>
-
-        {/* 3. Title & Subtitle */}
-        <h2 className="paywall-cartoon-title">
-          {isAr ? 'انضم إلى نخبة نيزك PRO' : 'Upgrade to Nayzak PRO'}
-        </h2>
-        <p className="paywall-cartoon-subtitle">
-          {isAr
-            ? 'امتلك كامل إمكانيات عالم نيزك: دراسات علمية معمقة، أرشيف القصص الكامل، وتمارين بلا حدود.'
-            : 'Unlock the full psychological universe: clinical exercises, comic vaults, and zero daily limits.'}
-        </p>
-
-        {/* 4. Perks List with Comic Badges */}
-        <ul className="paywall-cartoon-perks">
-          <li className="paywall-cartoon-perk-item">
-            <span className="paywall-cartoon-perk-icon">📚</span>
-            <span>
+        ) : (
+          <>
+            <h2 id="nayzak-paywall-title" className="nayzak-paywall-title">
               {isAr
-                ? 'فتح جميع أعداد فصول القصص المصورة الحالية والمستقبلية'
-                : 'All 8+ current & upcoming interactive comic chapters'}
-            </span>
-          </li>
-          <li className="paywall-cartoon-perk-item">
-            <span className="paywall-cartoon-perk-icon">🧠</span>
-            <span>
+                ? 'درّب جميع مهاراتك الإدراكية بلا حدود'
+                : 'Train Every Cognitive Skill Without Limits'}
+            </h2>
+            <p className="nayzak-paywall-subtitle">
               {isAr
-                ? 'تمارين غير محدودة في مختبر الذكاء والقدرات الإدراكية'
-                : 'Unlimited clinical cognitive experiments & training drills'}
-            </span>
-          </li>
-          <li className="paywall-cartoon-perk-item">
-            <span className="paywall-cartoon-perk-icon">📊</span>
-            <span>
+                ? 'برنامج تدريب ذهني متكامل مبني على قياس الأداء عبر المجالات الستة.'
+                : 'Personalized brain training calibrated to your 6-domain cognitive profile.'}
+            </p>
+
+            {/* 4 Value Propositions */}
+            <ul className="nayzak-paywall-perks">
+              {VALUE_PROPS.map(({ id, Icon, color, en, ar }) => (
+                <li key={id} className="nayzak-paywall-perk">
+                  <span
+                    className="nayzak-paywall-perk-icon"
+                    style={{ color }}
+                    aria-hidden="true"
+                  >
+                    <Icon size={20} weight="duotone" />
+                  </span>
+                  <span className="nayzak-paywall-perk-text">
+                    {isAr ? ar : en}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Interactive Plan Selector */}
+            <div
+              className="nayzak-paywall-plans"
+              role="radiogroup"
+              aria-label={isAr ? 'اختر باقة الاشتراك' : 'Choose subscription plan'}
+            >
+              {PLANS.map((plan) => {
+                const isSelected = selectedPlan === plan.id;
+                const badge = isAr ? plan.badgeAr : plan.badgeEn;
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`nayzak-plan-option ${isSelected ? 'is-selected' : ''} ${plan.id === 'annual' ? 'is-annual' : ''}`}
+                    onClick={() => handleSelectPlan(plan.id)}
+                  >
+                    {badge && <span className="nayzak-plan-save">{badge}</span>}
+                    <span className="nayzak-plan-radio" aria-hidden="true">
+                      {isSelected && <Check size={12} weight="bold" />}
+                    </span>
+                    <span className="nayzak-plan-info">
+                      <span className="nayzak-plan-name">
+                        {isAr ? plan.titleAr : plan.titleEn}
+                      </span>
+                      <span className="nayzak-plan-sub">
+                        {isAr ? plan.subAr : plan.subEn}
+                      </span>
+                    </span>
+                    <span className="nayzak-plan-price">
+                      {isAr ? plan.priceAr : plan.priceEn}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Primary CTA */}
+            <button
+              type="button"
+              className="nayzak-paywall-cta"
+              onClick={handleActivate}
+            >
+              <span>
+                {isPro
+                  ? isAr
+                    ? 'تأكيد الباقة المختارة'
+                    : 'Update Selected Plan'
+                  : isAr
+                    ? 'ابدأ تجربة مجانية 7 أيام'
+                    : 'Start 7-Day Free Trial'}
+              </span>
+            </button>
+
+            {isPro && typeof deactivatePro === 'function' && (
+              <button
+                type="button"
+                className="nayzak-paywall-secondary"
+                onClick={handleDeactivatePreview}
+              >
+                {isAr ? 'العودة إلى النسخة المجانية (معاينة)' : 'Switch Back to Free Preview'}
+              </button>
+            )}
+
+            <p className="nayzak-paywall-footnote">
               {isAr
-                ? 'شهادة تقرير المؤشر الإدراكي الشامل القابلة للتحميل والطباعة'
-                : 'Certified Brain Age & Cognitive Index report (printable)'}
-            </span>
-          </li>
-          <li className="paywall-cartoon-perk-item">
-            <span className="paywall-cartoon-perk-icon">🛡️</span>
-            <span>
-              {isAr
-                ? 'درع حماية التركيز والشارات الأسطورية الحصرية'
-                : 'Exclusive avatar crowns, shields, and streak protection'}
-            </span>
-          </li>
-        </ul>
-
-        {/* 5. Pricing Buttons */}
-        <div className="paywall-pricing-stack">
-          <button
-            type="button"
-            className="paywall-btn-annual"
-            onClick={subscribe}
-          >
-            <span>{isAr ? '🔥 الاشتراك السنوي (وفّر 33%)' : '🔥 Annual Pass (Save 33%)'}</span>
-            <span>$39.99 / {isAr ? 'سنة' : 'yr'}</span>
-          </button>
-
-          <button
-            type="button"
-            className="paywall-btn-monthly"
-            onClick={subscribe}
-          >
-            <span>{isAr ? '⭐ الاشتراك الشهري' : '⭐ Monthly Plan'}</span>
-            <span>$4.99 / {isAr ? 'شهر' : 'mo'}</span>
-          </button>
-        </div>
-
-        <p className="paywall-cartoon-footnote">
-          {isAr
-            ? '🔒 دفع آمن ومشفر بنسبة 100% عبر Stripe • يمكنك الإلغاء في أي وقت'
-            : '🔒 100% Secure encrypted checkout via Stripe • Cancel anytime'}
-        </p>
+                ? 'تجربة مجانية 7 أيام • يمكنك الإلغاء في أي وقت'
+                : '7-day free trial • Cancel anytime'}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

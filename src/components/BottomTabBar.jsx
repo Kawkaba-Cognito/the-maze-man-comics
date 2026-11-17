@@ -1,18 +1,21 @@
 import React from 'react';
-import { House, PuzzlePiece, UserCircle } from '@phosphor-icons/react';
+import { Tabbar, TabbarLink, ToolbarPane } from 'konsta/react';
+import { House, Compass, PuzzlePiece, ChartPolar } from '@phosphor-icons/react';
 import { useApp } from '../context/AppContext';
 
-/** Streamlined 3-Tab Architecture for Nayzak AI: Home (Training included), Puzzles, Profile */
+/** 4-Tab Lumosity-style Architecture for Nayzak AI: Today, Domains, Puzzles, Insights */
 export const APP_TABS = [
-  { id: 'home', screen: 'habits', Icon: House, en: 'Home', ar: 'الرئيسية' },
+  { id: 'home', screen: 'habits', Icon: House, en: 'Today', ar: 'اليوم' },
+  { id: 'domains', screen: 'domains', Icon: Compass, en: 'Domains', ar: 'المجالات' },
   { id: 'puzzles', screen: 'puzzles', Icon: PuzzlePiece, en: 'Puzzles', ar: 'الألغاز' },
-  { id: 'profile', screen: 'profile', Icon: UserCircle, en: 'Profile', ar: 'ملفي' },
+  { id: 'profile', screen: 'profile', Icon: ChartPolar, en: 'Insights', ar: 'التقدّم' },
 ];
 
 const TAB_IDS = new Set(APP_TABS.map((t) => t.id));
 
 /** Normalize nested routes onto a primary tab highlight. */
 export function resolveActiveTabId(activeTab) {
+  if (activeTab === 'domains') return 'domains';
   if (
     activeTab === 'habits'
     || activeTab === 'home'
@@ -47,29 +50,40 @@ export default function BottomTabBar() {
     switchTab(tab.screen);
   }
 
+  const tabs = isAr ? [...APP_TABS].reverse() : APP_TABS;
+
   return (
-    <nav className="app-tabbar app-tabbar--3" aria-label={isAr ? 'التنقّل الرئيسي' : 'Main navigation'} dir={isAr ? 'rtl' : 'ltr'}>
-      {APP_TABS.map((tab) => {
-        const active = current === tab.id;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            className={`app-tab${active ? ' is-active' : ''}`}
-            aria-current={active ? 'page' : undefined}
-            onClick={() => onSelect(tab)}
-          >
-            <span className="app-tab-ic" aria-hidden="true">
-              <tab.Icon
-                size="1.4em"
-                weight={active ? 'fill' : 'regular'}
-              />
-            </span>
-            <span className="app-tab-lbl">{isAr ? tab.ar : tab.en}</span>
-            {active && <span className="app-tab-pip" aria-hidden="true" />}
-          </button>
-        );
-      })}
-    </nav>
+    <Tabbar
+      labels
+      icons
+      className="app-tabbar-konsta left-0 bottom-0 fixed w-full z-[100]"
+      innerClassName="max-w-[680px] mx-auto"
+      aria-label={isAr ? 'التنقّل الرئيسي' : 'Main navigation'}
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
+      <ToolbarPane key={isAr ? 'rtl' : 'ltr'} dir="ltr">
+        {tabs.map((tab) => {
+          const active = current === tab.id;
+          return (
+            <TabbarLink
+              key={tab.id}
+              active={active}
+              className={active ? 'is-active' : undefined}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => onSelect(tab)}
+              icon={
+                <span className="inline-flex items-center justify-center" aria-hidden="true">
+                  <tab.Icon
+                    size={21}
+                    weight={active ? 'fill' : 'regular'}
+                  />
+                </span>
+              }
+              label={<span dir={isAr ? 'rtl' : 'ltr'}>{isAr ? tab.ar : tab.en}</span>}
+            />
+          );
+        })}
+      </ToolbarPane>
+    </Tabbar>
   );
 }

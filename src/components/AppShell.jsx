@@ -1,57 +1,71 @@
 import React from 'react';
+import { KonstaProvider } from 'konsta/react';
 import { useApp } from '../context/AppContext';
 import BottomTabBar, { resolveActiveTabId } from './BottomTabBar';
+import HomeScreen from './screens/HomeScreen';
+import DomainsScreen from './screens/DomainsScreen';
 import PuzzlesScreen from './screens/PuzzlesScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import HomeScreen from './screens/HomeScreen';
 import PaywallModal from './modals/PaywallModal';
 
 /**
- * Streamlined AppShell for Nayzak AI:
- * - Tab 1: Home (Training & Cartoon Room Stage)
- * - Tab 2: Puzzles (Puzzle Studio)
- * - Tab 3: Profile (Stats & Settings)
- * - Paywall Modal (Nayzak PRO Boundaries Shield)
+ * 4-Tab Lumosity-style AppShell for Nayzak AI (powered by Konsta UI iOS primitives):
+ * - Tab 1: Today (Home / Daily Session & Stage)
+ * - Tab 2: Domains (Cognitive Training Domains)
+ * - Tab 3: Puzzles (Puzzle Studio)
+ * - Tab 4: Insights (Stats, Progress & Settings)
+ * - Paywall Modal (Nayzak PRO Subscription)
  */
 export default function AppShell() {
-  const { activeTab, immersive, activeModalGame } = useApp();
+  const { activeTab, immersive, activeModalGame, appTheme } = useApp();
   const currentTab = resolveActiveTabId(activeTab);
+  const isDark = appTheme === 'dark';
   // Hide bottom tab bar if immersive OR if any modal game is open
   const showTabBar = !immersive && !activeModalGame;
 
   return (
-    <>
-      <div
-        id="ui-shell"
-        className={showTabBar ? 'ui-shell--tabbed' : undefined}
-      >
-        {/* 1. Home Screen (Includes Cartoon Nayzak Stage + 18 Cognitive Training Games) */}
+    <KonstaProvider theme="ios" dark={isDark}>
+      <div className={`k-ios${isDark ? ' dark' : ''}`}>
         <div
-          id="screen-home"
-          className={`ui-screen ${currentTab === 'home' ? 'active' : ''}`}
+          id="ui-shell"
+          className={showTabBar ? 'ui-shell--tabbed' : undefined}
         >
-          <HomeScreen />
+          {/* 1. Today / Home Screen */}
+          <div
+            id="screen-home"
+            className={`ui-screen ${currentTab === 'home' ? 'active' : ''}`}
+          >
+            <HomeScreen />
+          </div>
+
+          {/* 2. Cognitive Domains Screen */}
+          <div
+            id="screen-domains"
+            className={`ui-screen ${currentTab === 'domains' ? 'active' : ''}`}
+          >
+            <DomainsScreen />
+          </div>
+
+          {/* 3. Puzzle Studio (Wordle, Blockburst, Tangram, Rush Hour, etc.) */}
+          <div
+            id="screen-puzzles"
+            className={`ui-screen ${currentTab === 'puzzles' ? 'active' : ''}`}
+          >
+            <PuzzlesScreen />
+          </div>
+
+          {/* 4. Insights & Settings */}
+          <div
+            id="screen-profile"
+            className={`ui-screen ${currentTab === 'profile' ? 'active' : ''}`}
+          >
+            <ProfileScreen />
+          </div>
         </div>
 
-        {/* 2. Puzzle Studio (Wordle, Blockburst, Tangram, Rush Hour, etc.) */}
-        <div
-          id="screen-puzzles"
-          className={`ui-screen ${currentTab === 'puzzles' ? 'active' : ''}`}
-        >
-          <PuzzlesScreen />
-        </div>
-
-        {/* 3. User Profile & Settings */}
-        <div
-          id="screen-profile"
-          className={`ui-screen ${currentTab === 'profile' ? 'active' : ''}`}
-        >
-          <ProfileScreen />
-        </div>
+        {showTabBar && <BottomTabBar />}
+        <PaywallModal />
       </div>
-
-      {showTabBar && <BottomTabBar />}
-      <PaywallModal />
-    </>
+    </KonstaProvider>
   );
 }
