@@ -30,8 +30,6 @@ import {
   PuzzlePiece,
   ArrowsClockwise,
   Compass,
-  Crown,
-  ChartPolar,
   Sparkle,
 } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
@@ -232,8 +230,6 @@ export default function HomeScreen() {
     awardPoints,
     setActiveModalGame,
     switchTab,
-    isPro,
-    openPaywall,
   } = useApp();
   const isAr = currentLang === 'ar';
 
@@ -242,6 +238,23 @@ export default function HomeScreen() {
   const [activeWorkoutIdx, setActiveWorkoutIdx] = useState(null);
   const [workoutSt, setWorkoutSt] = useState(() => initWorkoutState());
   const [showGoalPicker, setShowGoalPicker] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try {
+      return localStorage.getItem('nayzak_welcome_seen_v1') !== '1';
+    } catch {
+      return true;
+    }
+  });
+
+  const dismissWelcome = useCallback(() => {
+    playSfx?.('tap');
+    setShowWelcome(false);
+    try {
+      localStorage.setItem('nayzak_welcome_seen_v1', '1');
+    } catch {
+      /* ignore */
+    }
+  }, [playSfx]);
 
   const GameView = activeGameKey ? getLazyGame(activeGameKey) : null;
 
@@ -328,6 +341,25 @@ export default function HomeScreen() {
     ? assetUrl('Assets/brand/cast-2026/nayzak-epiphany.webp')
     : assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
 
+  const nextExercise = wkExercises[nextIdx >= 0 ? nextIdx : 0];
+  const nextExp = nextExercise ? GAMES_BY_KEY[nextExercise.gameKey] : null;
+  const nextTitle = nextExp
+    ? isAr && nextExp.titleAr
+      ? nextExp.titleAr
+      : nextExp.titleEn
+    : nextExercise?.gameName || '';
+  const heroTitle = wkAllDone
+    ? isAr
+      ? 'أحسنت! أنهيت ألعاب اليوم'
+      : 'All 3 Games Complete!'
+    : currentGoal.id === 'overall'
+    ? isAr
+      ? 'تحدّي اليوم: ٣ ألعاب سريعة'
+      : "Today's 3-Game Mix"
+    : isAr
+    ? currentGoal.ar
+    : currentGoal.en;
+
   return (
     <div className="nayzak-page" dir={isAr ? 'rtl' : 'ltr'}>
       <NayzakHeader showLogo showStats showLang />
@@ -337,16 +369,31 @@ export default function HomeScreen() {
         <section className="lum-top-bar" aria-label={isAr ? 'نشاط الأسبوع' : 'Weekly activity'}>
           <div className="lum-top-copy">
             <span className="lum-date-label">{todayDateLabel}</span>
-            <h1 className="lum-screen-title">
-              {isAr ? 'تدريب اليوم' : 'Today'}
-            </h1>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="lum-screen-title">
+                {isAr ? 'تدريب اليوم' : 'Today'}
+              </h1>
+              {!showWelcome && (
+                <button
+                  type="button"
+                  className="nayzak-help-chip"
+                  onClick={() => {
+                    playSfx?.('tap');
+                    setShowWelcome(true);
+                  }}
+                >
+                  <Sparkle size={12} weight="fill" color="#FF7800" aria-hidden="true" />
+                  <span>{isAr ? 'كيف يعمل؟' : 'How it works'}</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="lum-rhythm-group">
             <span className="lum-streak-chip">
               <Flame size={14} weight="fill" color="#FF7800" aria-hidden="true" />
               <span>
-                {workoutSt?.streak || 0} {isAr ? 'يوم' : 'day streak'}
+                {workoutSt?.streak || 0} {isAr ? 'يوم متتالي' : 'day streak'}
               </span>
             </span>
 
@@ -369,6 +416,44 @@ export default function HomeScreen() {
             </div>
           </div>
         </section>
+
+        {/* Plain-Language Quick Start Guide for First-Time Players */}
+        {showWelcome && (
+          <section className="nayzak-welcome-card" aria-label={isAr ? 'دليل البداية السريع' : 'Quick start guide'}>
+            <div className="nayzak-welcome-top">
+              <h2 className="nayzak-welcome-title">
+                <Sparkle size={15} weight="fill" color="#FF7800" aria-hidden="true" />
+                <span>
+                  {isAr ? 'أهلاً بك! هكذا يعمل التطبيق في ٣ خطوات:' : 'New here? How Nayzak Games works:'}
+                </span>
+              </h2>
+              <button
+                type="button"
+                className="nayzak-welcome-dismiss"
+                onClick={dismissWelcome}
+              >
+                {isAr ? 'فهمت ✓' : 'Got it ✓'}
+              </button>
+            </div>
+            <ul className="nayzak-welcome-steps">
+              <li className="nayzak-welcome-step">
+                {isAr
+                  ? '١. اضغط «ابدأ اللعبة» لتجربة ٣ ألعاب قصيرة (دقيقتان لكل لعبة).'
+                  : '1. Tap Start below to play 3 short mini-games (~2 min each).'}
+              </li>
+              <li className="nayzak-welcome-step">
+                {isAr
+                  ? '٢. افتح «المجالات» أسفلاً لتختار أي مهارة وتلعب ألعابها الـ ١٨.'
+                  : '2. Open Domains to pick any skill directly (18 games total).'}
+              </li>
+              <li className="nayzak-welcome-step">
+                {isAr
+                  ? '٣. تفضل اللعب بلا توقيت؟ «الألغاز» فيها ١٩ لغزاً هادئاً.'
+                  : '3. Want no countdown? Puzzles has 19 untimed brain teasers.'}
+              </li>
+            </ul>
+          </section>
+        )}
 
         {/* 1. Official NAYZAK Show Host Daily Workout Stage */}
         <section
@@ -397,54 +482,31 @@ export default function HomeScreen() {
                     : "NAYZAK'S CHALLENGE"}
                 </span>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  {!isPro && (
-                    <button
-                      type="button"
-                      className="lum-pro-inline-chip"
-                      onClick={() => {
-                        playSfx?.('tap');
-                        openPaywall?.();
-                      }}
-                    >
-                      <Crown size={12} weight="fill" color="#FFB012" aria-hidden="true" />
-                      <span>{isAr ? 'تدريب مخصص · PRO' : 'Custom Coach · PRO'}</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="ed-focus-btn"
-                    onClick={() => {
-                      playSfx?.('tap');
-                      setShowGoalPicker((v) => !v);
-                    }}
-                    aria-expanded={showGoalPicker}
-                  >
-                    <SlidersHorizontal size={14} weight="bold" aria-hidden="true" />
-                    <span>{isAr ? 'الهدف' : 'Focus'}</span>
-                    <CaretDown size={12} weight="bold" aria-hidden="true" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="ed-focus-btn"
+                  onClick={() => {
+                    playSfx?.('tap');
+                    setShowGoalPicker((v) => !v);
+                  }}
+                  aria-expanded={showGoalPicker}
+                >
+                  <SlidersHorizontal size={14} weight="bold" aria-hidden="true" />
+                  <span>{isAr ? 'تغيير التركيز' : 'Goal'}</span>
+                  <CaretDown size={12} weight="bold" aria-hidden="true" />
+                </button>
               </div>
 
-              <h2 className="lum-hero-title">
-                {wkAllDone
-                  ? isAr
-                    ? 'اكتملت جلسة اليوم'
-                    : 'Session Complete'
-                  : isAr
-                  ? currentGoal.ar
-                  : currentGoal.en}
-              </h2>
+              <h2 className="lum-hero-title">{heroTitle}</h2>
 
               <p className="nayzak-hero-speech">
                 {wkAllDone
                   ? isAr
-                    ? 'نيزك: «عمل رائع! حافظت على شعلتك اليوم وأنهيت الجولات الثلاث.»'
-                    : 'Nayzak: “Bullseye! All three rounds beaten — see you tomorrow!”'
+                    ? 'نيزك: «أبدعت اليوم! أنهيت ألعابك الثلاث، عُد غداً لجولة جديدة.»'
+                    : 'Nayzak: “Bullseye! All 3 rounds beaten — come back tomorrow!”'
                   : isAr
-                  ? `نيزك: «٣ جولات سريعة تنشّط عقلك — أنجزت ${wkDoneCount} من ${wkTotal}»`
-                  : `Nayzak: “Three crisp rounds (~10 min) — ${wkDoneCount} of ${wkTotal} complete.”`}
+                  ? `العب أي جولة بالأسفل أو اضغط «ابدأ» (${wkDoneCount}/${wkTotal} مكتملة)`
+                  : `Tap any game below or press Start (${wkDoneCount} of ${wkTotal} done · ~2 min each)`}
               </p>
             </div>
           </div>
@@ -471,7 +533,7 @@ export default function HomeScreen() {
             </div>
           )}
 
-          {/* Direct Clean Playlist Rows (Solid Color Tile + Crisp White Vector Glyph) */}
+          {/* Direct Clean Playlist Rows (Solid Color Tile + Plain 1-Line Action Hint) */}
           <ul className="lum-playlist" role="list">
             {wkExercises.map((ex, idx) => {
               const dom = DOMAINS_META[ex.domainId] || DOMAINS_META.attention;
@@ -484,6 +546,13 @@ export default function HomeScreen() {
                   ? exp.titleAr
                   : exp.titleEn
                 : ex.gameName;
+              const desc = exp
+                ? isAr && exp.descAr
+                  ? exp.descAr
+                  : exp.descEn
+                : isAr
+                ? dom.descAr
+                : dom.descEn;
               const launchExercise = () =>
                 handleLaunchGame(
                   exp || { gameKey: ex.gameKey, domainId: ex.domainId },
@@ -513,6 +582,7 @@ export default function HomeScreen() {
                         {isAr ? dom.ar : dom.en}
                       </span>
                       <span className="lum-row-title">{title}</span>
+                      {desc && <span className="nayzak-row-sub">{desc}</span>}
                     </span>
 
                     <span className="lum-row-trailing">
@@ -534,7 +604,7 @@ export default function HomeScreen() {
             })}
           </ul>
 
-          {/* Clean Full-Width Pill CTA */}
+          {/* Clean Full-Width Pill CTA Naming the Exact Next Game */}
           <div className="lum-hero-footer">
             {!wkAllDone ? (
               <button
@@ -554,10 +624,10 @@ export default function HomeScreen() {
               >
                 <Play size={17} weight="fill" aria-hidden="true" />
                 <span>
-                  {wkDoneCount > 0
+                  {nextTitle
                     ? isAr
-                      ? `متابعة التمرين (${wkDoneCount}/${wkTotal})`
-                      : `Continue Workout (${wkDoneCount}/${wkTotal})`
+                      ? `ابدأ اللعبة ${(nextIdx >= 0 ? nextIdx : 0) + 1}: ${nextTitle}`
+                      : `Play Game ${(nextIdx >= 0 ? nextIdx : 0) + 1}: ${nextTitle}`
                     : isAr
                     ? 'ابدأ تمرين اليوم'
                     : "Start Today's Workout"}
@@ -576,9 +646,9 @@ export default function HomeScreen() {
           </div>
         </section>
 
-        {/* 2. Secondary Lumosity-Style Modular Grid (Focus + Explore) */}
+        {/* 2. Secondary Modular Grid (Quick Extra Game + Clear Tab Shortcuts) */}
         <section className="lum-secondary-grid" aria-label={isAr ? 'المزيد من التدريبات' : 'More workouts'}>
-          {/* Card A: Recommended Focus (Guarded by Canonical Nayzak Family Member) */}
+          {/* Card A: Extra Quick Game */}
           <button
             type="button"
             className="lum-module-card lum-module-card--focus"
@@ -608,19 +678,13 @@ export default function HomeScreen() {
                 )}
               </div>
               <span className="lum-module-badge">
-                {ratedDomains.length > 0
-                  ? isAr
-                    ? 'توصية اليوم'
-                    : 'FOCUS AREA'
-                  : isAr
-                  ? `مع ${recGuardian?.nameAr || ''}`
-                  : `WITH ${recGuardian?.nameEn?.toUpperCase() || ''}`}
+                {isAr ? 'تدريب سريع (دقيقتان)' : 'QUICK PRACTICE · 2 MIN'}
               </span>
             </div>
 
             <div className="lum-module-body">
               <h3 className="lum-module-title">
-                {isAr ? recMeta.ar : recMeta.en}
+                {isAr ? `تقوية ${recMeta.ar}` : `${recMeta.en} Practice`}
                 {recBand ? ` · ${recRating}` : ''}
               </h3>
               <p className="lum-module-desc">{isAr ? recMeta.descAr : recMeta.descEn}</p>
@@ -630,7 +694,7 @@ export default function HomeScreen() {
               <div className="lum-module-link">
                 <span>
                   {isAr
-                    ? `ابدأ: ${starterGame.titleAr || starterGame.titleEn}`
+                    ? `العب: ${starterGame.titleAr || starterGame.titleEn}`
                     : `Play ${starterGame.titleEn}`}
                 </span>
                 <RowChevron size={15} weight="bold" aria-hidden="true" />
@@ -638,7 +702,7 @@ export default function HomeScreen() {
             )}
           </button>
 
-          {/* Card B: Quick Shortcuts */}
+          {/* Card B: Clear Shortcuts Explaining the Other Tabs */}
           <div className="lum-module-card lum-module-card--list">
             <button
               type="button"
@@ -653,8 +717,8 @@ export default function HomeScreen() {
                 <Compass size={19} weight="fill" color="#FFFFFF" />
               </span>
               <span className="lum-row-copy">
-                <span className="lum-row-title">{isAr ? 'المجالات الستة' : '6 Cognitive Domains'}</span>
-                <span className="lum-mini-sub">{isAr ? '18 لعبة معرفية' : 'Browse all 18 games'}</span>
+                <span className="lum-row-title">{isAr ? 'تصفّح كل الألعاب (١٨ لعبة)' : 'Browse All 18 Skill Games'}</span>
+                <span className="lum-mini-sub">{isAr ? 'اختر انتباه، سرعة، ذاكرة، لغة أو منطق' : 'Pick Attention, Memory, Speed, Language & more'}</span>
               </span>
               <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
             </button>
@@ -662,47 +726,23 @@ export default function HomeScreen() {
             <button
               type="button"
               className="lum-mini-row"
-              onClick={() => switchTab('profile')}
+              onClick={() => switchTab('puzzles')}
             >
               <span
                 className="lum-tile-icon lum-tile-icon--sm"
                 style={{ backgroundColor: '#FF7800' }}
                 aria-hidden="true"
               >
-                <ChartPolar size={19} weight="fill" color="#FFFFFF" />
+                <PuzzlePiece size={19} weight="fill" color="#FFFFFF" />
               </span>
               <span className="lum-row-copy">
-                <span className="lum-row-title">{isAr ? 'رادار الأداء NPI' : 'Cognitive Radar'}</span>
-                <span className="lum-mini-sub">{isAr ? 'مؤشر 0–1000' : 'Your 0–1000 profile'}</span>
+                <span className="lum-row-title">{isAr ? '١٩ لغزاً بدون مؤقت' : '19 Untimed Brain Puzzles'}</span>
+                <span className="lum-mini-sub">{isAr ? 'ألغاز أرقام وتفكير هادئة على راحتك' : 'Sudoku, Tangram & logic at your own pace'}</span>
               </span>
               <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
             </button>
           </div>
         </section>
-
-        {/* 3. Mobile-Only Slim PRO Strip (Desktop shows PRO inside Left Rail) */}
-        {!isPro && (
-          <section className="ed-pro-card md:hidden">
-            <div className="ed-pro-copy">
-              <div className="ed-pro-head">
-                <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
-                <h3>{isAr ? 'نيزك PRO' : 'Nayzak PRO'}</h3>
-              </div>
-              <p>
-                {isAr
-                  ? 'افتح رادار الأداء الكامل والتدريبات المخصصة بلا حدود.'
-                  : 'Unlock full 6-domain insights, custom workouts & unlimited access.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="ed-pro-btn"
-              onClick={() => openPaywall?.()}
-            >
-              {isAr ? 'ابدأ التجربة' : 'Try Free'}
-            </button>
-          </section>
-        )}
       </main>
     </div>
   );

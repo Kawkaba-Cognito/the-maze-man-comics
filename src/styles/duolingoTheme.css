@@ -8097,3 +8097,187 @@ html[data-home-theme='dark'] .nayzak-profile-cast-tag {
   padding: 2px;
   border: 1.5px solid #0f1e33;
 }
+
+/* ==========================================================================
+   FIRST-TIME CLARITY & PHONE BREATHING ROOM
+   ========================================================================== */
+
+/* Keep phone top header ultra-clean: hide PRO pill below 768px & guard tight gaps */
+@media (max-width: 767px) {
+  .nayzak-header-pro {
+    display: none !important;
+  }
+
+  .nayzak-header.duo-styled-header {
+    padding: 0 12px;
+  }
+
+  .duo-header-inner {
+    gap: 6px;
+  }
+
+  .duo-stats-group {
+    gap: 5px;
+  }
+
+  .duo-stat-pill {
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+
+  .duo-lang-pill {
+    height: 32px;
+    padding: 0 9px;
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
+  [dir='rtl'] .duo-lang-pill {
+    margin-left: 0;
+    margin-right: 4px;
+  }
+}
+
+/* Friendly helper line under tab screen headings */
+.nayzak-tab-helper {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.45;
+}
+
+html[data-home-theme='dark'] .nayzak-tab-helper {
+  color: #94a3b8;
+}
+
+/* Quick-start welcome banner for new users */
+.nayzak-welcome-card {
+  width: 100%;
+  background: #fff8df;
+  border: 2px solid #0f1e33;
+  border-bottom: 4px solid #0f1e33;
+  border-radius: 18px;
+  padding: 13px 15px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.nayzak-welcome-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nayzak-welcome-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #0f1e33;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nayzak-welcome-dismiss {
+  appearance: none;
+  border: 1.5px solid #0f1e33;
+  background: #ffffff;
+  color: #0f1e33;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nayzak-welcome-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+@media (min-width: 700px) {
+  .nayzak-welcome-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+.nayzak-welcome-step {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 10px;
+  padding: 7px 10px;
+}
+
+.nayzak-help-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 30, 51, 0.06);
+  border: 1px solid rgba(15, 30, 51, 0.1);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-home-theme='dark'] .nayzak-welcome-card {
+  background: #172b49;
+  border-color: rgba(255, 176, 18, 0.55);
+}
+
+html[data-home-theme='dark'] .nayzak-welcome-title {
+  color: #fde68a;
+}
+
+html[data-home-theme='dark'] .nayzak-welcome-step {
+  background: rgba(11, 21, 38, 0.55);
+  color: #e2e8f0;
+}
+
+html[data-home-theme='dark'] .nayzak-welcome-dismiss {
+  background: #0f1e33;
+  color: #fde68a;
+  border-color: rgba(255, 176, 18, 0.55);
+}
+
+html[data-home-theme='dark'] .nayzak-help-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+}
+
+/* Wrap long Arabic/English game titles cleanly + show friendly 1-line description */
+.lum-row-title {
+  white-space: normal !important;
+  line-height: 1.25;
+}
+
+.nayzak-row-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+html[data-home-theme='dark'] .nayzak-row-sub {
+  color: #94a3b8;
+}

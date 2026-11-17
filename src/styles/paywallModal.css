@@ -462,3 +462,62 @@ html[data-home-theme='dark'] .nayzak-paywall-trio {
   background: linear-gradient(135deg, #1b365d 0%, #244675 100%);
   border-color: rgba(255, 176, 18, 0.65);
 }
+
+/* Mobile-First Non-Blocking Modal Ergonomics (<640px) */
+@media (max-width: 639px) {
+  #paywall-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .nayzak-paywall-card {
+    max-width: 100%;
+    max-height: 86dvh;
+    border-radius: 26px 26px 0 0;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-bottom: none;
+  }
+
+  .nayzak-paywall-close {
+    top: 12px;
+    inset-inline-end: 12px;
+    width: 38px;
+    height: 38px;
+    border-width: 2px;
+    box-shadow: 0 2px 6px rgba(15, 30, 51, 0.14);
+  }
+
+  .nayzak-paywall-trio {
+    height: 62px;
+    max-width: 200px;
+    margin: 0 auto 6px;
+    padding: 4px 10px 2px;
+  }
+
+  .nayzak-paywall-trio-char {
+    width: 50px;
+    height: 54px;
+  }
+
+  .nayzak-paywall-trio-char.is-right {
+    width: 44px;
+    height: 48px;
+  }
+
+  .nayzak-paywall-subtitle {
+    margin-bottom: 10px;
+  }
+
+  .nayzak-paywall-perks {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .nayzak-paywall-perk {
+    padding: 7px 10px;
+  }
+
+  .nayzak-plan-option {
+    padding: 11px 12px;
+  }
+}

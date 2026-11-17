@@ -274,11 +274,16 @@ export default function PuzzlesScreen() {
         <section className="lum-catalog-header">
           <div className="lum-top-copy">
             <span className="lum-date-label">
-              {isAr ? 'استوديو الألغاز' : 'MIND STUDIO · 19 PUZZLES'}
+              {isAr ? 'استوديو الألغاز · ١٩ لغزاً' : 'MIND STUDIO · 19 PUZZLES'}
             </span>
             <h1 className="lum-screen-title">
               {isAr ? 'الألغاز والتحديات' : 'Puzzles'}
             </h1>
+            <p className="nayzak-tab-helper">
+              {isAr
+                ? 'ألغاز أرقام ومنطق هادئة — العب على راحتك بدون مؤقت'
+                : 'Relaxed logic & number teasers — play at your own pace, no countdown.'}
+            </p>
           </div>
         </section>
 

@@ -322,7 +322,7 @@ export default function ProfileScreen() {
         <section className="lum-catalog-header">
           <div className="lum-top-copy">
             <span className="lum-date-label">
-              {isAr ? 'الملف المعرفي والإحصائيات' : 'COGNITIVE PROFILE'}
+              {isAr ? 'تقدّمك وإعداداتك' : 'YOUR PROGRESS & SETTINGS'}
             </span>
             <h1 className="lum-screen-title">
               {isAr ? 'التقدّم والإعدادات' : 'Insights'}
@@ -513,9 +513,11 @@ export default function ProfileScreen() {
             <section className="duo-section-card lum-radar-card">
               <div className="duo-card-header">
                 <div>
-                  <h3 className="duo-card-title">{isAr ? 'المؤشر الإدراكي' : 'Cognitive Index'}</h3>
+                  <h3 className="duo-card-title">{isAr ? 'خريطة مهاراتك' : 'Your Skill Chart'}</h3>
                   <span className="duo-cog-subtitle">
-                    {isAr ? 'مقياس المهارات عبر المجالات الستة (٠–١٠٠٠)' : 'Skill rating across all 6 cognitive domains (0–1000)'}
+                    {isAr
+                      ? 'تمتلئ تلقائياً كلما لعبت أكثر عبر المهارات الست'
+                      : 'Grows automatically as you finish mini-games across all 6 skills'}
                   </span>
                 </div>
                 {liveIndex != null && liveBand ? (

@@ -67,7 +67,7 @@ export default function NayzakHeader({
           {shouldShowPro &&
             (isPro ? (
               <span
-                className="nayzak-header-pro nayzak-header-pro--active"
+                className="nayzak-header-pro nayzak-header-pro--active hidden md:inline-flex"
                 title={isAr ? 'اشتراك نيزك PRO مفعّل' : 'Nayzak PRO Active'}
                 aria-label={isAr ? 'اشتراك نيزك PRO مفعّل' : 'Nayzak PRO Active'}
               >
@@ -77,7 +77,7 @@ export default function NayzakHeader({
             ) : (
               <button
                 type="button"
-                className="nayzak-header-pro nayzak-header-pro--upgrade"
+                className="nayzak-header-pro nayzak-header-pro--upgrade hidden md:inline-flex"
                 onClick={() => openPaywall?.()}
                 title={isAr ? 'الترقية إلى نيزك PRO' : 'Upgrade to Nayzak PRO'}
                 aria-label={isAr ? 'الترقية إلى نيزك PRO' : 'Upgrade to Nayzak PRO'}

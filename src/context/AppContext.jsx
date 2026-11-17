@@ -32,7 +32,7 @@ function readSfxEnabled() {
 }
 
 const DEFAULT_PROFILE = {
-  avatar: 'Assets/cast-2d-minimal-2026/kawkab.webp', username: 'NAYZAK WALKER',
+  avatar: 'Assets/brand/cast-2026/nayzak-host.webp', username: 'NAYZAK WALKER',
   streak: 1, lastVisit: null,
   videosWatched: 0, fragments: 0, puzzlesSolved: 0,
   badges: { explorer: false, maze: false, master: false }

@@ -295,13 +295,21 @@ export default function PaywallModal() {
               </span>
             </button>
 
-            {isPro && typeof deactivatePro === 'function' && (
+            {isPro && typeof deactivatePro === 'function' ? (
               <button
                 type="button"
                 className="nayzak-paywall-secondary"
                 onClick={handleDeactivatePreview}
               >
                 {isAr ? 'العودة إلى النسخة المجانية (معاينة)' : 'Switch Back to Free Preview'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="nayzak-paywall-secondary"
+                onClick={handleClose}
+              >
+                {isAr ? 'ليس الآن · متابعة اللعب مجاناً' : 'Not now · Continue Free'}
               </button>
             )}
 

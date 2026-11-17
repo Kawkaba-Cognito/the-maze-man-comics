@@ -561,6 +561,11 @@ export default function DomainsScreen() {
                 ? 'جميع الألعاب (18)'
                 : 'All Games'}
             </h1>
+            <p className="nayzak-tab-helper">
+              {isAr
+                ? 'اختر أي مهارة للتدرب على ألعابها بالسرعة التي تناسبك'
+                : 'Pick any skill card to open its 3 mini-games and play anytime.'}
+            </p>
           </div>
 
           <Segmented
