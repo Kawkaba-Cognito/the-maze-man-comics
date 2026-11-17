@@ -1,7 +1,5 @@
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import {
-  Badge,
-  BlockTitle,
   Button,
   List,
   ListItem,
@@ -11,8 +9,23 @@ import {
 } from 'konsta/react';
 import {
   Crosshair,
+  Target,
+  RocketLaunch,
   Lightning,
+  Calculator,
+  Timer,
+  BookOpenText,
+  Eye,
+  SquaresFour,
+  TextAa,
+  Link as LinkIcon,
   Brain,
+  Car,
+  Key,
+  Detective,
+  Swap,
+  ArrowsLeftRight,
+  Funnel,
   ChatCircleText,
   PuzzlePiece,
   ArrowsClockwise,
@@ -20,11 +33,9 @@ import {
   Play,
   ArrowRight,
   ArrowLeft,
-  SquaresFour,
   ListBullets,
   Clock,
   Star,
-  Crown,
   Sparkle,
 } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
@@ -38,7 +49,27 @@ import {
   gameRatingByGameKey,
   ratingBand,
 } from '../../features/training/rating';
-import { assetUrl } from '../../lib/assetUrl';
+
+const GAME_ICON_MAP = {
+  'cancel-task': Crosshair,
+  mot: Target,
+  'train-switch': RocketLaunch,
+  'speed-match': Lightning,
+  'math-gates': Calculator,
+  intercept: Timer,
+  'story-grid': BookOpenText,
+  'keep-track': Eye,
+  'paired-associates': SquaresFour,
+  wordle: TextAa,
+  synonyms: LinkIcon,
+  trivia: Brain,
+  'rush-hour': Car,
+  gatekeeper: Key,
+  detective: Detective,
+  'mirror-world': Swap,
+  'task-switch': ArrowsLeftRight,
+  'sort-shift': Funnel,
+};
 
 const DOMAINS_LIST = [
   {
@@ -48,7 +79,6 @@ const DOMAINS_LIST = [
     Icon: Crosshair,
     color: '#FF7800',
     softBg: '#FFF4E5',
-    art: 'Assets/domain-art/category-drawings-2026/attention.webp',
     descAr: 'البحث البصري، التركيز المستدام، وتثبيط المشتتات',
     descEn: 'Visual search, sustained focus & distractor filtering',
   },
@@ -59,7 +89,6 @@ const DOMAINS_LIST = [
     Icon: Lightning,
     color: '#0B63CE',
     softBg: '#EFF6FF',
-    art: 'Assets/domain-art/category-drawings-2026/speed.webp',
     descAr: 'سرعة المعالجة الذهنية، الحساب السريع، ودقة التوقيت',
     descEn: 'Rapid processing, mental arithmetic & reaction timing',
   },
@@ -70,7 +99,6 @@ const DOMAINS_LIST = [
     Icon: Brain,
     color: '#1CB0F6',
     softBg: '#F0F9FF',
-    art: 'Assets/domain-art/category-drawings-2026/memory.webp',
     descAr: 'الذاكرة العاملة، التذكر المكاني، وتسلسل الأحداث',
     descEn: 'Working memory updating, spatial recall & sequencing',
   },
@@ -81,9 +109,8 @@ const DOMAINS_LIST = [
     Icon: ChatCircleText,
     color: '#0D9488',
     softBg: '#F0FDFA',
-    art: 'Assets/domain-art/category-drawings-2026/language.webp',
     descAr: 'المفردات، الروابط الدلالية، والمعرفة العامة',
-    descEn: 'Vocabulary retrieval, word associations & general knowledge',
+    descEn: 'Vocabulary retrieval, word links & general knowledge',
   },
   {
     id: 'reasoning',
@@ -92,7 +119,6 @@ const DOMAINS_LIST = [
     Icon: PuzzlePiece,
     color: '#4F46E5',
     softBg: '#EEF2FF',
-    art: 'Assets/domain-art/category-drawings-2026/reasoning.webp',
     descAr: 'التخطيط المكاني، استنتاج القواعد، والتحليل المنطقي',
     descEn: 'Spatial planning, rule induction & deductive logic',
   },
@@ -103,32 +129,10 @@ const DOMAINS_LIST = [
     Icon: ArrowsClockwise,
     color: '#DF4E32',
     softBg: '#FFF1EE',
-    art: 'Assets/domain-art/category-drawings-2026/flexibility.webp',
     descAr: 'التكيف الحركي، تبديل المهام، وإعادة التصنيف',
     descEn: 'Task switching, motor adaptation & creative sorting',
   },
 ];
-
-const GAME_ART_V2 = {
-  'cancel-task': 'attention-cancellation-v2.webp',
-  mot: 'attention-target-tracking-v2.webp',
-  'train-switch': 'attention-spaceship-v2.webp',
-  'speed-match': 'speed-speed-match-v2.webp',
-  'math-gates': 'speed-math-gates-v2.webp',
-  intercept: 'speed-intercept-v2.webp',
-  'story-grid': 'memory-story-time-v2.webp',
-  'keep-track': 'memory-keep-track-v2.webp',
-  'paired-associates': 'memory-pair-match-v2.webp',
-  wordle: 'language-word-maze-v2.webp',
-  synonyms: 'language-word-links-v2.webp',
-  trivia: 'language-trivia-v2.webp',
-  'rush-hour': 'reasoning-block-escape-v2.webp',
-  gatekeeper: 'reasoning-gatekeeper-v2.webp',
-  detective: 'reasoning-detective-v2.webp',
-  'mirror-world': 'flexibility-mirror-world-v2.webp',
-  'task-switch': 'flexibility-task-switch-v2.webp',
-  'sort-shift': 'flexibility-sort-shift-v2.webp',
-};
 
 const TRAINING_GAMES = EXPERIMENTS.filter(
   (exp) => exp.domainId !== 'puzzles' && exp.gameKey && exp.gameKey !== 'puzzles'
@@ -178,13 +182,9 @@ function ExerciseListItem({ exp, domain, isAr, played, ratingInfo, onLaunch }) {
   const title = isAr && exp.titleAr ? exp.titleAr : exp.titleEn;
   const tag = isAr && exp.tagAr ? exp.tagAr : exp.tagEn;
   const desc = isAr && exp.descAr ? exp.descAr : exp.descEn;
-  const paradigm = isAr && exp.paradigmAr ? exp.paradigmAr : exp.paradigm;
   const duration = isAr && exp.durationAr ? exp.durationAr : exp.duration;
   const band = ratingInfo && ratingInfo.n > 0 ? ratingBand(ratingInfo.rating) : null;
-
-  const v2Art = GAME_ART_V2[exp.gameKey]
-    ? assetUrl(`Assets/game-illustrations/${GAME_ART_V2[exp.gameKey]}`)
-    : null;
+  const GameIcon = GAME_ICON_MAP[exp.gameKey] || domain.Icon;
 
   return (
     <ListItem
@@ -200,28 +200,22 @@ function ExerciseListItem({ exp, domain, isAr, played, ratingInfo, onLaunch }) {
       tabIndex={0}
       aria-label={`${title} - ${tag}`}
       media={
-        <div
-          className="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10"
-          style={{ background: domain.softBg }}
+        <span
+          className="lum-tile-icon shrink-0"
+          style={{ backgroundColor: domain.color }}
+          aria-hidden="true"
         >
-          <img
-            src={v2Art || exp.imageAsset || assetUrl(domain.art)}
-            alt={title}
-            loading="lazy"
-            draggable="false"
-            className="w-full h-full object-cover block"
-          />
-        </div>
+          <GameIcon size={21} weight="fill" color="#FFFFFF" />
+        </span>
       }
       header={
-        <div className="inline-flex items-center gap-1.5 flex-wrap">
-          <Badge
-            small
-            colors={{ bg: 'bg-transparent', text: '' }}
-            className="duo-ex-skill-pill px-2 py-0.5"
+        <div className="inline-flex items-center gap-2 flex-wrap">
+          <span
+            className="text-[11px] font-extrabold uppercase tracking-wider"
+            style={{ color: domain.color }}
           >
             {tag}
-          </Badge>
+          </span>
           {band && (
             <span
               className="inline-flex items-center gap-0.5 text-[11px] font-extrabold"
@@ -235,16 +229,9 @@ function ExerciseListItem({ exp, domain, isAr, played, ratingInfo, onLaunch }) {
       }
       title={title}
       subtitle={
-        <span className="inline-flex items-center gap-1.5 flex-wrap text-xs">
-          <span className="inline-flex items-center gap-1">
-            <Clock size={12} weight="bold" aria-hidden="true" />
-            <span>{duration}</span>
-          </span>
-          {paradigm && (
-            <span className="truncate max-w-[200px] opacity-85" title={paradigm}>
-              {`· ${paradigm}`}
-            </span>
-          )}
+        <span className="inline-flex items-center gap-1.5 text-xs">
+          <Clock size={12} weight="bold" aria-hidden="true" />
+          <span>{duration}</span>
         </span>
       }
       text={desc}
@@ -262,7 +249,7 @@ function ExerciseListItem({ exp, domain, isAr, played, ratingInfo, onLaunch }) {
             small
             rounded
             inline
-            className="nayzak-konsta-cta border-0 px-3 gap-1 shrink-0"
+            className="nayzak-konsta-cta border-0 px-3.5 gap-1 shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               onLaunch(exp, domain.id);
@@ -278,13 +265,7 @@ function ExerciseListItem({ exp, domain, isAr, played, ratingInfo, onLaunch }) {
 }
 
 export default function DomainsScreen() {
-  const {
-    currentLang,
-    playSfx,
-    setActiveModalGame,
-    isPro = false,
-    openPaywall,
-  } = useApp();
+  const { currentLang, playSfx, setActiveModalGame } = useApp();
   const isAr = currentLang === 'ar';
 
   const [selectedDomainId, setSelectedDomainId] = useState(null);
@@ -313,28 +294,25 @@ export default function DomainsScreen() {
 
   const domainSummaries = DOMAINS_LIST.map((domain) => {
     const games = TRAINING_GAMES.filter((exp) => exp.domainId === domain.id);
-    const playedCount = games.filter((g) => gameMetaMap[g.gameKey]?.played).length;
+    const playedCount = games.filter(
+      (exp) => gameMetaMap[exp.gameKey]?.played
+    ).length;
     const rating = domainRating(domain.id);
     const band = rating != null ? ratingBand(rating) : null;
     const guardian = getDomainGuardian(domain.id);
-    return {
-      domain,
-      games,
-      playedCount,
-      rating,
-      band,
-      guardian,
-    };
+    return { domain, games, playedCount, rating, band, guardian };
   });
 
-  const selectedSummary =
-    domainSummaries.find((s) => s.domain.id === selectedDomainId) || null;
+  const selectedSummary = selectedDomainId
+    ? domainSummaries.find((s) => s.domain.id === selectedDomainId) || null
+    : null;
 
-  const q = searchQuery.trim().toLowerCase();
+  const trimmedQuery = searchQuery.trim().toLowerCase();
   const filteredGroups = domainSummaries
     .map((summary) => {
-      if (!q) return summary;
+      if (!trimmedQuery) return summary;
       const d = summary.domain;
+      const q = trimmedQuery;
       const domainMatch =
         d.en.toLowerCase().includes(q) ||
         (d.ar && d.ar.toLowerCase().includes(q)) ||
@@ -401,7 +379,7 @@ export default function DomainsScreen() {
     );
   }
 
-  // Domain Detail Mode
+  // Domain Detail Mode (Clean Lumosity/Elevate Editorial Header + Exercises List)
   if (selectedSummary) {
     const { domain, games, playedCount, rating, band, guardian } = selectedSummary;
     const DomainIcon = domain.Icon;
@@ -461,82 +439,53 @@ export default function DomainsScreen() {
             })}
           </nav>
 
-          {/* Domain Detail Banner */}
-          <section
-            className="duo-domain-detail-banner"
-            style={{ '--dom-color': domain.color, '--dom-soft': domain.softBg }}
-          >
-            <div className="duo-domain-detail-top">
-              <div className="duo-domain-detail-art">
-                <img
-                  src={assetUrl(domain.art)}
-                  alt={domainName}
-                  draggable="false"
-                />
-              </div>
+          {/* Clean Flat-Vector Domain Header Card */}
+          <section className="lum-domain-detail-card">
+            <div className="lum-domain-detail-head">
+              <span
+                className="lum-tile-icon lum-tile-icon--lg"
+                style={{ backgroundColor: domain.color }}
+                aria-hidden="true"
+              >
+                <DomainIcon size={26} weight="fill" color="#FFFFFF" />
+              </span>
 
-              <div className="duo-domain-detail-copy">
-                <div className="duo-domain-detail-badges">
-                  <span className="duo-domain-num-pill">
+              <div className="lum-domain-detail-copy">
+                <div className="lum-domain-detail-meta">
+                  <span className="lum-domain-kicker" style={{ color: domain.color }}>
                     {isAr ? 'مجال إدراكي' : 'COGNITIVE DOMAIN'}
                   </span>
                   {rating != null && band ? (
-                    <span
-                      className="duo-domain-rating-pill"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      <Star size={12} weight="fill" />
-                      <span>
-                        {`NPI ${rating} · ${isAr ? band.ar : band.en}`}
-                      </span>
+                    <span className="lum-rating-chip">
+                      <Star size={11} weight="fill" aria-hidden="true" />
+                      <span>{`NPI ${rating} · ${isAr ? band.ar : band.en}`}</span>
                     </span>
                   ) : (
-                    <span className="duo-domain-rating-pill">
+                    <span className="lum-rating-chip is-muted">
                       {isAr ? 'لم يُقيّم بعد' : 'Unrated yet'}
                     </span>
                   )}
                 </div>
 
-                <h2
-                  className="duo-domain-detail-title"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <DomainIcon
-                    size={22}
-                    weight="duotone"
-                    color={domain.color}
-                    aria-hidden="true"
-                  />
-                  <span>{domainName}</span>
-                </h2>
-                <p className="duo-domain-detail-desc">{domainDesc}</p>
+                <h2 className="lum-domain-detail-title">{domainName}</h2>
+                <p className="lum-domain-detail-desc">{domainDesc}</p>
               </div>
             </div>
 
             {guardian && (
-              <div className="duo-domain-guardian-bar">
+              <div className="lum-guardian-strip">
                 <img
                   src={guardian.avatarUrl}
                   alt={isAr ? guardian.nameAr : guardian.nameEn}
-                  className="duo-guardian-avatar"
+                  className="lum-guardian-avatar"
                   draggable="false"
                 />
-                <div className="duo-guardian-text">
-                  <div className="duo-guardian-name-row">
+                <div className="lum-guardian-copy">
+                  <div className="lum-guardian-name">
                     <strong>{isAr ? guardian.nameAr : guardian.nameEn}</strong>
-                    <span>
-                      {`• ${isAr ? guardian.roleAr : guardian.roleEn}`}
-                    </span>
+                    <span>{isAr ? guardian.roleAr : guardian.roleEn}</span>
                   </div>
-                  <p className="duo-guardian-quote">
+                  <p className="lum-guardian-quote">
                     {isAr ? guardian.quoteAr : guardian.quoteEn}
                   </p>
                 </div>
@@ -544,30 +493,19 @@ export default function DomainsScreen() {
             )}
           </section>
 
-          {/* Exercises List Header */}
-          <BlockTitle className="w-full !mt-4 !mb-1 !px-1">
-            <span>
-              {isAr ? `تمارين ${domainName}` : `${domainName} Exercises`}
+          <div className="lum-section-row">
+            <h3 className="lum-section-title">
+              {isAr ? `تمارين ${domainName}` : `${domainName} Games`}
+            </h3>
+            <span className="lum-count-pill">
+              {isAr ? `${games.length} ألعاب` : `${games.length} games`}
             </span>
-            <Badge
-              small
-              colors={{
-                bg: 'bg-black/8 dark:bg-white/12',
-                text: 'text-slate-600 dark:text-slate-300',
-              }}
-              className="px-2 py-0.5"
-            >
-              {isAr
-                ? `${games.length} ألعاب متخصصة`
-                : `${games.length} specialized games`}
-            </Badge>
-          </BlockTitle>
+          </div>
 
-          {/* 3 Rich Exercise Rows (Konsta iOS Inset List) */}
           <List
             strong
             inset
-            className="w-full !mx-0 !mt-2 !mb-6"
+            className="w-full !mx-0 !mt-0 !mb-6"
             style={{ '--dom-color': domain.color, '--dom-soft': domain.softBg }}
           >
             {games.map((exp) => {
@@ -590,168 +528,29 @@ export default function DomainsScreen() {
     );
   }
 
-  // Overview Mode
+  // Overview Mode (Clean Lumosity / Elevate / Peak Catalog — Zero Gradient SaaS Banner)
   const totalGames = TRAINING_GAMES.length;
-  const masteryPct =
-    totalGames > 0 ? Math.round((totalPlayed / totalGames) * 100) : 0;
 
   return (
     <div className="nayzak-page" dir={isAr ? 'rtl' : 'ltr'}>
       <NayzakHeader showLogo showStats showLang />
 
       <main className="duo-home-container duo-home-container--wide">
-        {/* Brand-Aligned Cognitive Domains Mastery Banner */}
-        <section
-          className="duo-home-hero"
-          aria-label={isAr ? 'المجالات الإدراكية' : 'Cognitive Domains'}
-          style={{
-            background:
-              'linear-gradient(135deg, #0F1E33 0%, #132B4C 54%, #0B63CE 100%)',
-            border: '2px solid #0B63CE',
-            borderBottom: '5px solid #091526',
-            boxShadow: '0 14px 30px rgba(15, 30, 51, 0.24)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 10,
-              flexWrap: 'wrap',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px',
-                borderRadius: 999,
-                background: 'rgba(11, 99, 206, 0.36)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                color: '#E0F2FE',
-                fontFamily: "'Outfit', 'Cairo', system-ui, sans-serif",
-                fontSize: 11,
-                fontWeight: 900,
-                letterSpacing: '0.07em',
-                textTransform: 'uppercase',
-              }}
-            >
-              <Brain size={14} weight="fill" color="#FFB012" />
-              <span>{isAr ? 'أطلس القدرات الإدراكية' : 'COGNITIVE DOMAINS'}</span>
+        {/* Clean Editorial Header + View Switcher */}
+        <section className="lum-catalog-header">
+          <div className="lum-top-copy">
+            <span className="lum-date-label">
+              {isAr ? `${totalPlayed} من ${totalGames} ألعاب لعبتها` : `${totalPlayed} OF ${totalGames} GAMES PLAYED`}
             </span>
-
-            {!isPro && (
-              <button
-                type="button"
-                onClick={() => {
-                  playSfx?.('click');
-                  openPaywall?.();
-                }}
-                style={{
-                  appearance: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 12px',
-                  borderRadius: 999,
-                  background: 'rgba(255, 176, 18, 0.16)',
-                  border: '1.5px solid rgba(255, 176, 18, 0.6)',
-                  color: '#FFB012',
-                  fontFamily: "'Outfit', 'Cairo', system-ui, sans-serif",
-                  fontSize: 11.5,
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <Crown size={13} weight="fill" color="#FFB012" />
-                <span>{isAr ? 'ترقية إلى PRO' : 'Unlock PRO'}</span>
-              </button>
-            )}
-          </div>
-
-          <div className="duo-home-hero-copy" style={{ gap: 4 }}>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: "'Outfit', 'Cairo', system-ui, sans-serif",
-                fontSize: 'clamp(1.25rem, 3.8vw, 1.55rem)',
-                fontWeight: 900,
-                color: '#FFFFFF',
-                lineHeight: 1.2,
-              }}
-            >
-              {isAr ? 'استكشف المجالات الستة' : 'Master All 6 Cognitive Domains'}
+            <h1 className="lum-screen-title">
+              {viewMode === 'domains'
+                ? isAr
+                  ? 'المجالات الإدراكية'
+                  : 'Domains'
+                : isAr
+                ? 'جميع الألعاب (18)'
+                : 'All Games'}
             </h1>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "'Outfit', 'Cairo', system-ui, sans-serif",
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'rgba(226, 232, 240, 0.88)',
-                lineHeight: 1.45,
-              }}
-            >
-              {isAr
-                ? 'تدرّب عبر ست مهارات إدراكية متكاملة و١٨ تمريناً علمياً مصمماً بدقة.'
-                : 'Train across six core mental pillars with 18 science-backed cognitive exercises.'}
-            </p>
-          </div>
-
-          <div
-            className="duo-home-hero-progress"
-            style={{
-              background: 'rgba(15, 30, 51, 0.56)',
-              borderColor: 'rgba(255, 176, 18, 0.28)',
-            }}
-          >
-            <div className="duo-home-hero-prog-row">
-              <span>
-                {isAr ? 'إجمالي الإتقان المعرفي' : 'Total Domain Mastery'}
-              </span>
-              <span style={{ color: '#FFB012' }}>
-                {isAr
-                  ? `${totalPlayed} / ${totalGames} تمارين مكتملة`
-                  : `${totalPlayed} / ${totalGames} exercises played`}
-              </span>
-            </div>
-            <div className="duo-home-hero-track">
-              <div
-                className="duo-home-hero-fill"
-                style={{
-                  width: `${Math.max(masteryPct, totalPlayed > 0 ? 6 : 0)}%`,
-                  background:
-                    'linear-gradient(90deg, #FFB012 0%, #38BDF8 100%)',
-                }}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Toolbar with Domains (6) / All (18) Toggle */}
-        <div className="duo-home-toolbar">
-          <div className="duo-home-toolbar-title">
-            <h2>
-              {viewMode === 'domains'
-                ? isAr
-                  ? 'المجالات الإدراكية الستة'
-                  : 'Cognitive Domains'
-                : isAr
-                ? 'جميع التمارين حسب المجال'
-                : 'All 18 Exercises'}
-            </h2>
-            <p>
-              {viewMode === 'domains'
-                ? isAr
-                  ? 'اختر المهارة التي تريد تقويتها اليوم'
-                  : 'Choose a cognitive skill to train'
-                : isAr
-                ? 'مرتّبة ومميّزة بالألوان حسب المجال الإدراكي'
-                : 'Grouped and color-coded by cognitive domain'}
-            </p>
           </div>
 
           <Segmented
@@ -793,135 +592,83 @@ export default function DomainsScreen() {
               </span>
             </SegmentedButton>
           </Segmented>
-        </div>
+        </section>
 
-        {/* Domains (6) 2-Column Grid */}
+        {/* Domains (6) 2-Column Clean Flat-Vector Pillar Cards */}
         {viewMode === 'domains' ? (
-          <div className="w-full">
-            <BlockTitle className="w-full !mt-1 !mb-2.5 !px-1">
-              <span>{isAr ? '٦ ركائز إدراكية' : '6 Cognitive Pillars'}</span>
-              <Badge
-                small
-                colors={{
-                  bg: 'bg-black/8 dark:bg-white/12',
-                  text: 'text-slate-600 dark:text-slate-300',
-                }}
-                className="px-2 py-0.5"
-              >
-                {isAr
-                  ? `${totalPlayed}/${totalGames} مكتمل`
-                  : `${totalPlayed}/${totalGames} played`}
-              </Badge>
-            </BlockTitle>
+          <section
+            className="lum-domains-grid"
+            aria-label={isAr ? 'المجالات الإدراكية' : 'Cognitive domains'}
+          >
+            {domainSummaries.map(({ domain, games, playedCount, rating, band }) => {
+              const DomainIcon = domain.Icon;
+              const name = isAr ? domain.ar : domain.en;
+              const desc = isAr ? domain.descAr : domain.descEn;
+              const pct = Math.round((playedCount / Math.max(1, games.length)) * 100);
 
-            <section
-              className="duo-domain-grid"
-              aria-label={isAr ? 'المجالات الإدراكية' : 'Cognitive domains'}
-            >
-              {domainSummaries.map(({ domain, games, playedCount, rating, band }) => {
-                const DomainIcon = domain.Icon;
-                const name = isAr ? domain.ar : domain.en;
-                const desc = isAr ? domain.descAr : domain.descEn;
-                const pct = Math.round(
-                  (playedCount / Math.max(1, games.length)) * 100
-                );
+              return (
+                <button
+                  key={domain.id}
+                  type="button"
+                  className="lum-domain-card"
+                  style={{ '--dom-color': domain.color, '--dom-soft': domain.softBg }}
+                  onClick={() => handleSelectDomain(domain.id)}
+                >
+                  <div className="lum-domain-card-top">
+                    <span
+                      className="lum-tile-icon"
+                      style={{ backgroundColor: domain.color }}
+                      aria-hidden="true"
+                    >
+                      <DomainIcon size={22} weight="fill" color="#FFFFFF" />
+                    </span>
 
-                return (
-                  <button
-                    key={domain.id}
-                    type="button"
-                    className="duo-domain-card"
-                    style={{ '--dom-color': domain.color, '--dom-soft': domain.softBg }}
-                    onClick={() => handleSelectDomain(domain.id)}
-                  >
-                    <div className="duo-domain-card-stripe" aria-hidden="true" />
+                    {rating != null && band ? (
+                      <span className="lum-rating-chip">
+                        <Star size={11} weight="fill" aria-hidden="true" />
+                        <span>{`${rating} · ${isAr ? band.ar : band.en}`}</span>
+                      </span>
+                    ) : (
+                      <span className="lum-count-pill">
+                        {isAr ? `${games.length} ألعاب` : `${games.length} games`}
+                      </span>
+                    )}
+                  </div>
 
-                    <div className="duo-domain-card-head">
-                      <div className="duo-domain-art-box">
-                        <img
-                          src={assetUrl(domain.art)}
-                          alt=""
-                          draggable="false"
-                        />
-                        <span
-                          className="duo-domain-emoji-badge"
-                          aria-hidden="true"
-                        >
-                          <DomainIcon
-                            size={13}
-                            weight="fill"
-                            color={domain.color}
-                          />
-                        </span>
-                      </div>
+                  <div className="lum-domain-card-body">
+                    <h2 className="lum-domain-card-title">{name}</h2>
+                    <p className="lum-domain-card-desc">{desc}</p>
+                  </div>
 
-                      <div className="duo-domain-card-titles">
-                        <div className="duo-domain-title-row">
-                          <h3 className="duo-domain-card-name">{name}</h3>
-                          {rating != null && band ? (
-                            <span
-                              className="duo-domain-score-pill"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Star size={11} weight="fill" />
-                              <span>
-                                {`${rating} · ${isAr ? band.ar : band.en}`}
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="duo-domain-count-chip">
-                              {isAr
-                                ? `${games.length} ألعاب`
-                                : `${games.length} games`}
-                            </span>
-                          )}
-                        </div>
-                        <p
-                          className="duo-domain-card-desc"
-                          style={{
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {desc}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="duo-domain-card-prog">
-                      <div className="duo-domain-prog-track">
+                  <div className="lum-domain-card-foot">
+                    <div className="lum-domain-prog">
+                      <div className="lum-domain-prog-track">
                         <div
-                          className="duo-domain-prog-fill"
+                          className="lum-domain-prog-fill"
                           style={{
-                            width: `${Math.max(pct, playedCount > 0 ? 12 : 0)}%`,
+                            width: `${playedCount > 0 ? Math.max(pct, 14) : 0}%`,
+                            backgroundColor: domain.color,
                           }}
                         />
                       </div>
+                      <span className="lum-domain-prog-lbl">
+                        {isAr
+                          ? `${playedCount}/${games.length}`
+                          : `${playedCount}/${games.length} played`}
+                      </span>
                     </div>
 
-                    <div className="duo-domain-card-foot">
-                      <span className="duo-domain-foot-meta">
-                        {isAr
-                          ? `${playedCount} / ${games.length} مكتمل`
-                          : `${playedCount} / ${games.length} played`}
-                      </span>
-                      <span className="duo-domain-open-cta">
-                        <span>{isAr ? 'تدرب' : 'Train'}</span>
-                        <NavArrow size={14} weight="bold" />
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </section>
-          </div>
+                    <span className="lum-domain-cta" style={{ color: domain.color }}>
+                      <span>{isAr ? 'تدرب' : 'Train'}</span>
+                      <NavArrow size={14} weight="bold" aria-hidden="true" />
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </section>
         ) : (
-          /* All (18) Grouped Mode with Konsta Searchbar & Inset Lists */
+          /* All (18) Grouped Mode with Crisp Vector Icon Lists */
           <section className="duo-all-grouped">
             <Searchbar
               value={searchQuery}
@@ -932,7 +679,7 @@ export default function DomainsScreen() {
               placeholder={
                 isAr
                   ? 'ابحث عن تمرين أو مهارة أو مجال...'
-                  : 'Search exercise, skill, or domain...'
+                  : 'Search game, skill, or domain...'
               }
               aria-label={isAr ? 'البحث في التمارين' : 'Search exercises'}
               className="rounded-full bg-white dark:bg-slate-800/90 border border-black/8 dark:border-white/10 shadow-sm [&_button]:border-0 [&_button]:bg-transparent [&_input]:border-0"
@@ -972,22 +719,18 @@ export default function DomainsScreen() {
                       '--dom-soft': domain.softBg,
                     }}
                   >
-                    <BlockTitle className="w-full !mt-2 !mb-1 !px-1">
+                    <div className="lum-section-row">
                       <span className="inline-flex items-center gap-2 min-w-0">
                         <span
                           className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0"
-                          style={{ background: domain.softBg }}
+                          style={{ backgroundColor: domain.color }}
                           aria-hidden="true"
                         >
-                          <DomainIcon
-                            size={16}
-                            weight="duotone"
-                            color={domain.color}
-                          />
+                          <DomainIcon size={15} weight="fill" color="#FFFFFF" />
                         </span>
-                        <span className="font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                        <h2 className="lum-section-title truncate">
                           {isAr ? domain.ar : domain.en}
-                        </span>
+                        </h2>
                       </span>
 
                       <button
@@ -1000,9 +743,9 @@ export default function DomainsScreen() {
                         </span>
                         <NavArrow size={13} weight="bold" aria-hidden="true" />
                       </button>
-                    </BlockTitle>
+                    </div>
 
-                    <List strong inset className="w-full !mx-0 !mt-2 !mb-3">
+                    <List strong inset className="w-full !mx-0 !mt-1.5 !mb-3">
                       {games.map((exp) => {
                         const meta = gameMetaMap[exp.gameKey] || {};
                         return (

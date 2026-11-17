@@ -32,7 +32,7 @@ function readSfxEnabled() {
 }
 
 const DEFAULT_PROFILE = {
-  avatar: 'Assets/cartoon/nayzak_unified_leader.png', username: 'NAYZAK WALKER',
+  avatar: 'Assets/cast-2d-minimal-2026/kawkab.webp', username: 'NAYZAK WALKER',
   streak: 1, lastVisit: null,
   videosWatched: 0, fragments: 0, puzzlesSolved: 0,
   badges: { explorer: false, maze: false, master: false }

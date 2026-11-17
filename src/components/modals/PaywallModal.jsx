@@ -204,11 +204,11 @@ export default function PaywallModal() {
               {VALUE_PROPS.map(({ id, Icon, color, en, ar }) => (
                 <li key={id} className="nayzak-paywall-perk">
                   <span
-                    className="nayzak-paywall-perk-icon"
-                    style={{ color }}
+                    className="lum-tile-icon lum-tile-icon--xs shrink-0"
+                    style={{ backgroundColor: color }}
                     aria-hidden="true"
                   >
-                    <Icon size={20} weight="duotone" />
+                    <Icon size={16} weight="fill" color="#FFFFFF" />
                   </span>
                   <span className="nayzak-paywall-perk-text">
                     {isAr ? ar : en}

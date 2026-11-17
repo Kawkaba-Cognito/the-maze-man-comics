@@ -301,9 +301,11 @@ export default function ProfileScreen() {
   }
 
   const resolvedAvatar =
-    profileData.avatar && (profileData.avatar.includes('/') || profileData.avatar.includes('.'))
+    profileData.avatar &&
+    (profileData.avatar.includes('/') || profileData.avatar.includes('.')) &&
+    !profileData.avatar.includes('nayzak_unified_leader')
       ? assetUrl(profileData.avatar)
-      : assetUrl('Assets/cartoon/nayzak_unified_leader.png');
+      : assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp');
 
   const StrongestIcon = strongestDomain ? DOMAIN_DISPLAY[strongestDomain.id].Icon : null;
   const FocusIcon = focusDomain ? DOMAIN_DISPLAY[focusDomain.id].Icon : null;
@@ -313,6 +315,17 @@ export default function ProfileScreen() {
       <NayzakHeader showLogo showStats showLang />
 
       <main className="duo-profile-container">
+        <section className="lum-catalog-header">
+          <div className="lum-top-copy">
+            <span className="lum-date-label">
+              {isAr ? 'الملف المعرفي والإحصائيات' : 'COGNITIVE PROFILE'}
+            </span>
+            <h1 className="lum-screen-title">
+              {isAr ? 'التقدّم والإعدادات' : 'Insights'}
+            </h1>
+          </div>
+        </section>
+
         {/* Identity & Level Card */}
         <section className="duo-identity-card">
           <div
@@ -338,7 +351,7 @@ export default function ProfileScreen() {
                 alt={profileData.username}
                 draggable="false"
                 onError={(e) => {
-                  const fallback = assetUrl('Assets/cartoon/nayzak_unified_leader.png');
+                  const fallback = assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp');
                   if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
                 }}
               />
@@ -489,8 +502,10 @@ export default function ProfileScreen() {
           <h3 className="duo-card-title" style={{ marginBottom: 12 }}>{isAr ? 'الإعدادات' : 'Settings'}</h3>
 
           <div className="duo-row-item">
-            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Globe size={18} weight="duotone" color="#0B63CE" aria-hidden="true" />
+            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+              <span className="lum-tile-icon lum-tile-icon--xs" style={{ backgroundColor: '#0B63CE' }} aria-hidden="true">
+                <Globe size={16} weight="fill" color="#FFFFFF" />
+              </span>
               <span>{isAr ? 'اللغة' : 'Language'}</span>
             </span>
             <button
@@ -506,12 +521,18 @@ export default function ProfileScreen() {
           </div>
 
           <div className="duo-row-item">
-            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {sfxEnabled ? (
-                <SpeakerHigh size={18} weight="duotone" color="#0B63CE" aria-hidden="true" />
-              ) : (
-                <SpeakerSlash size={18} weight="duotone" color="#64748b" aria-hidden="true" />
-              )}
+            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+              <span
+                className="lum-tile-icon lum-tile-icon--xs"
+                style={{ backgroundColor: sfxEnabled ? '#1CB0F6' : '#64748B' }}
+                aria-hidden="true"
+              >
+                {sfxEnabled ? (
+                  <SpeakerHigh size={16} weight="fill" color="#FFFFFF" />
+                ) : (
+                  <SpeakerSlash size={16} weight="fill" color="#FFFFFF" />
+                )}
+              </span>
               <span>{isAr ? 'الأصوات التفاعلية' : 'Sound Effects'}</span>
             </span>
             <Toggle
@@ -525,12 +546,18 @@ export default function ProfileScreen() {
           </div>
 
           <div className="duo-row-item">
-            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {isDark ? (
-                <Moon size={18} weight="duotone" color="#FFB012" aria-hidden="true" />
-              ) : (
-                <Sun size={18} weight="duotone" color="#FF7800" aria-hidden="true" />
-              )}
+            <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+              <span
+                className="lum-tile-icon lum-tile-icon--xs"
+                style={{ backgroundColor: isDark ? '#4F46E5' : '#FF7800' }}
+                aria-hidden="true"
+              >
+                {isDark ? (
+                  <Moon size={16} weight="fill" color="#FFFFFF" />
+                ) : (
+                  <Sun size={16} weight="fill" color="#FFFFFF" />
+                )}
+              </span>
               <span>{isAr ? 'المظهر الداكن' : 'Dark Mode'}</span>
             </span>
             <Toggle
@@ -544,22 +571,22 @@ export default function ProfileScreen() {
           </div>
         </section>
 
-        {/* Nayzak PRO Card (Live isPro Status) */}
-        <section className="duo-pro-banner">
-          <div className="duo-pro-copy">
-            <h3 style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <Crown size={18} weight="fill" color="#FFB012" aria-hidden="true" />
-              <span>
+        {/* Mobile-only Nayzak PRO Card (Desktop shows PRO inside Left Rail) */}
+        <section className="ed-pro-card md:hidden">
+          <div className="ed-pro-copy">
+            <div className="ed-pro-head">
+              <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
+              <h3>
                 {isPro
                   ? isAr
                     ? 'Nayzak PRO مفعّل'
                     : 'Nayzak PRO Active'
                   : isAr
-                    ? 'عضوية Nayzak PRO'
+                    ? 'نيزك PRO'
                     : 'Nayzak PRO'}
-              </span>
-              {isPro && <CheckCircle size={16} weight="fill" color="#1CB0F6" aria-hidden="true" />}
-            </h3>
+              </h3>
+              {isPro && <CheckCircle size={15} weight="fill" color="#1CB0F6" aria-hidden="true" />}
+            </div>
             <p>
               {isPro
                 ? isAr
@@ -567,19 +594,19 @@ export default function ProfileScreen() {
                   : `All 18 drills, 19 puzzles, and full 6-domain NPI insights unlocked${proPlan === 'monthly' ? ' (Monthly plan)' : proPlan === 'annual' ? ' (Annual plan)' : ''}.`
                 : isAr
                   ? 'افتح جميع التمارين الإكلينيكية الـ 18 و19 لغزاً وتقارير الرادار الكاملة.'
-                  : 'Unlock all 18 clinical drills, 19 mind puzzles & full Cognitive Radar insights.'}
+                  : 'Unlock all 18 drills, 19 mind puzzles & full Cognitive Radar insights.'}
             </p>
           </div>
           <button
             type="button"
-            className="duo-pro-btn"
+            className="ed-pro-btn"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             onClick={() => {
               playSfx?.('ding');
               openPaywall?.();
             }}
           >
-            <Sparkle size={16} weight="fill" aria-hidden="true" />
+            <Sparkle size={14} weight="fill" aria-hidden="true" />
             <span>
               {isPro
                 ? isAr

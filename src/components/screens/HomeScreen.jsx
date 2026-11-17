@@ -1,5 +1,4 @@
 import React, { useState, useCallback, Suspense } from 'react';
-import { List, ListItem, BlockTitle, Card, Button, Badge } from 'konsta/react';
 import {
   Check,
   CheckCircle,
@@ -7,16 +6,32 @@ import {
   Flame,
   SlidersHorizontal,
   CaretDown,
+  CaretRight,
+  CaretLeft,
   Crosshair,
+  Target,
+  RocketLaunch,
   Lightning,
+  Calculator,
+  Timer,
+  BookOpenText,
+  Eye,
+  SquaresFour,
+  TextAa,
+  Link as LinkIcon,
   Brain,
+  Car,
+  Key,
+  Detective,
+  Swap,
+  ArrowsLeftRight,
+  Funnel,
   ChatCircleText,
   PuzzlePiece,
   ArrowsClockwise,
   Compass,
   Crown,
   ChartPolar,
-  RocketLaunch,
   Sparkle,
 } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
@@ -38,25 +53,25 @@ import { assetUrl } from '../../lib/assetUrl';
 
 const WORKOUT_COMPLETE_BONUS = 50;
 
-const GAME_ART_V2 = {
-  'cancel-task': 'attention-cancellation-v2.webp',
-  mot: 'attention-target-tracking-v2.webp',
-  'train-switch': 'attention-spaceship-v2.webp',
-  'speed-match': 'speed-speed-match-v2.webp',
-  'math-gates': 'speed-math-gates-v2.webp',
-  intercept: 'speed-intercept-v2.webp',
-  'story-grid': 'memory-story-time-v2.webp',
-  'keep-track': 'memory-keep-track-v2.webp',
-  'paired-associates': 'memory-pair-match-v2.webp',
-  wordle: 'language-word-maze-v2.webp',
-  synonyms: 'language-word-links-v2.webp',
-  trivia: 'language-trivia-v2.webp',
-  'rush-hour': 'reasoning-block-escape-v2.webp',
-  gatekeeper: 'reasoning-gatekeeper-v2.webp',
-  detective: 'reasoning-detective-v2.webp',
-  'mirror-world': 'flexibility-mirror-world-v2.webp',
-  'task-switch': 'flexibility-task-switch-v2.webp',
-  'sort-shift': 'flexibility-sort-shift-v2.webp',
+const GAME_ICON_MAP = {
+  'cancel-task': Crosshair,
+  mot: Target,
+  'train-switch': RocketLaunch,
+  'speed-match': Lightning,
+  'math-gates': Calculator,
+  intercept: Timer,
+  'story-grid': BookOpenText,
+  'keep-track': Eye,
+  'paired-associates': SquaresFour,
+  wordle: TextAa,
+  synonyms: LinkIcon,
+  trivia: Brain,
+  'rush-hour': Car,
+  gatekeeper: Key,
+  detective: Detective,
+  'mirror-world': Swap,
+  'task-switch': ArrowsLeftRight,
+  'sort-shift': Funnel,
 };
 
 const DOMAINS_META = {
@@ -143,6 +158,18 @@ const GAMES_BY_KEY = Object.fromEntries(
 
 const WEEKDAY_EN = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEKDAY_AR = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+
+function formatTodayLabel(isAr) {
+  try {
+    return new Intl.DateTimeFormat(isAr ? 'ar-EG' : 'en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    }).format(new Date());
+  } catch {
+    return isAr ? 'جلسة اليوم' : 'Today';
+  }
+}
 
 function initWorkoutState() {
   let st = ensureToday(loadWorkout());
@@ -277,6 +304,7 @@ export default function HomeScreen() {
   const nextIdx = wkDone.findIndex((d) => !d);
   const currentGoal = GOALS_BY_ID[today.goal] || GOALS_BY_ID.overall;
   const last7 = getLast7Days(workoutSt?.history);
+  const todayDateLabel = formatTodayLabel(isAr);
 
   const ratedDomains = DOMAIN_IDS.map((id) => ({
     id,
@@ -293,71 +321,83 @@ export default function HomeScreen() {
   const recGames = TRAINING_GAMES.filter((g) => g.domainId === recommendedDomainId);
   const starterGame = recGames[0] || TRAINING_GAMES[0];
   const RecIcon = recMeta.Icon;
+  const RowChevron = isAr ? CaretLeft : CaretRight;
 
   return (
     <div className="nayzak-page" dir={isAr ? 'rtl' : 'ltr'}>
       <NayzakHeader showLogo showStats showLang />
 
       <main className="duo-home-container duo-home-container--wide">
-        {/* Clean Unboxed Week Rhythm Bar directly on the Canvas */}
-        <div className="ed-week-bar" aria-label={isAr ? 'نشاط آخر 7 أيام' : 'Last 7 days'}>
-          <div className="ed-week-meta">
-            <span className="ed-week-eyebrow">
-              {isAr ? 'الروتين اليومي' : 'DAILY RHYTHM'}
-            </span>
-            <span className="ed-week-streak">
-              <Flame size={13} weight="fill" color="#FF7800" aria-hidden="true" />
+        {/* Top Greeting & Weekly Rhythm Strip */}
+        <section className="lum-top-bar" aria-label={isAr ? 'نشاط الأسبوع' : 'Weekly activity'}>
+          <div className="lum-top-copy">
+            <span className="lum-date-label">{todayDateLabel}</span>
+            <h1 className="lum-screen-title">
+              {isAr ? 'تدريب اليوم' : 'Today'}
+            </h1>
+          </div>
+
+          <div className="lum-rhythm-group">
+            <span className="lum-streak-chip">
+              <Flame size={14} weight="fill" color="#FF7800" aria-hidden="true" />
               <span>
-                {workoutSt?.streak || 0} {isAr ? 'أيام متتالية' : 'day streak'}
+                {workoutSt?.streak || 0} {isAr ? 'يوم' : 'day streak'}
               </span>
             </span>
-          </div>
 
-          <div className="ed-week-dots">
-            {last7.map((d) => (
-              <div
-                key={d.key}
-                className={`ed-week-day${d.isToday ? ' is-today' : ''}${
-                  d.complete ? ' is-complete' : d.partial ? ' is-partial' : ''
-                }`}
-              >
-                <span className="ed-week-lbl">
-                  {(isAr ? WEEKDAY_AR : WEEKDAY_EN)[d.dow]}
-                </span>
-                <span className="ed-week-dot">
-                  {d.complete && <Check size={10} weight="bold" aria-hidden="true" />}
-                </span>
-              </div>
-            ))}
+            <div className="ed-week-dots" aria-label={isAr ? 'آخر 7 أيام' : 'Last 7 days'}>
+              {last7.map((d) => (
+                <div
+                  key={d.key}
+                  className={`ed-week-day${d.isToday ? ' is-today' : ''}${
+                    d.complete ? ' is-complete' : d.partial ? ' is-partial' : ''
+                  }`}
+                >
+                  <span className="ed-week-lbl">
+                    {(isAr ? WEEKDAY_AR : WEEKDAY_EN)[d.dow]}
+                  </span>
+                  <span className="ed-week-dot">
+                    {d.complete && <Check size={10} weight="bold" aria-hidden="true" />}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* 1. Editorial Today's Workout Card (Fits cleanly above the fold) */}
-        <Card
-          component="section"
-          contentWrap={false}
-          className="ed-today-card !mx-0 !mt-0"
-          aria-label={isAr ? 'تمرين اليوم' : "Today's Workout"}
+        {/* 1. Primary Lumosity/Elevate Daily Workout Card (Single Clean Surface) */}
+        <section
+          className="lum-hero-card"
+          aria-label={isAr ? 'تمرين اليوم' : "Daily Workout"}
         >
-          <div className="ed-today-header">
-            <div className="ed-today-header-copy">
-              <span className="ed-today-kicker">
-                {isAr ? 'تمرين اليوم' : "TODAY'S WORKOUT"}
-              </span>
-              <h1 className="ed-today-title">
-                {wkAllDone
-                  ? isAr
-                    ? 'اكتملت جلسة اليوم'
-                    : 'Session Complete'
-                  : isAr
-                  ? currentGoal.ar
-                  : currentGoal.en}
-              </h1>
-              <p className="ed-today-sub">
-                {isAr
-                  ? `${wkDoneCount} من ${wkTotal} تمارين • ~10 دقائق`
-                  : `${wkDoneCount} of ${wkTotal} exercises • ~10 min`}
-              </p>
+          <div className="lum-hero-head">
+            <div className="lum-hero-identity">
+              <div className="lum-mascot-plate" aria-hidden="true">
+                <img
+                  src={assetUrl('Assets/cast-2d-minimal-2026/kawkab.webp')}
+                  alt=""
+                  draggable="false"
+                />
+              </div>
+              <div className="lum-hero-titles">
+                <span className="lum-hero-eyebrow">
+                  {isAr ? 'البرنامج اليومي' : 'DAILY WORKOUT'}
+                </span>
+                <h2 className="lum-hero-title">
+                  {wkAllDone
+                    ? isAr
+                      ? 'اكتملت جلسة اليوم'
+                      : 'Session Complete'
+                    : isAr
+                    ? currentGoal.ar
+                    : currentGoal.en}
+                </h2>
+                <p className="lum-hero-meta">
+                  {isAr
+                    ? `${wkDoneCount} من ${wkTotal} ألعاب · ~10 دقائق`
+                    : `${wkDoneCount} of ${wkTotal} games · ~10 min`}
+                </p>
+              </div>
             </div>
 
             <button
@@ -397,20 +437,12 @@ export default function HomeScreen() {
             </div>
           )}
 
-          {/* Konsta iOS Inset Workout Queue using bespoke -v2.webp artwork */}
-          <List
-            strong
-            inset
-            outline
-            className="!my-0 !mx-0 w-full"
-            colors={{
-              strongBgIos: 'bg-[#f8f6f1]/70 dark:bg-[#0b1526]/70',
-              outlineIos: 'border-black/10 dark:border-white/10',
-            }}
-          >
+          {/* Direct Clean Playlist Rows (Solid Color Tile + Crisp White Vector Glyph) */}
+          <ul className="lum-playlist" role="list">
             {wkExercises.map((ex, idx) => {
               const dom = DOMAINS_META[ex.domainId] || DOMAINS_META.attention;
               const exp = GAMES_BY_KEY[ex.gameKey];
+              const GameIcon = GAME_ICON_MAP[ex.gameKey] || dom.Icon;
               const isDone = Boolean(wkDone[idx]);
               const isUpNext = idx === nextIdx;
               const title = exp
@@ -418,9 +450,6 @@ export default function HomeScreen() {
                   ? exp.titleAr
                   : exp.titleEn
                 : ex.gameName;
-              const thumbSrc = GAME_ART_V2[ex.gameKey]
-                ? assetUrl(`Assets/game-illustrations/${GAME_ART_V2[ex.gameKey]}`)
-                : exp?.imageAsset;
               const launchExercise = () =>
                 handleLaunchGame(
                   exp || { gameKey: ex.gameKey, domainId: ex.domainId },
@@ -429,83 +458,54 @@ export default function HomeScreen() {
                 );
 
               return (
-                <ListItem
-                  key={`${ex.gameKey}-${idx}`}
-                  link
-                  strongTitle
-                  titleFontSizeIos="text-[15px]"
-                  className={isDone ? 'opacity-65' : ''}
-                  linkProps={{
-                    role: 'button',
-                    tabIndex: 0,
-                    onKeyDown: (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        launchExercise();
-                      }
-                    },
-                  }}
-                  onClick={launchExercise}
-                  media={
-                    thumbSrc ? (
-                      <img
-                        src={thumbSrc}
-                        alt=""
-                        draggable="false"
-                        className="w-11 h-11 rounded-xl object-cover bg-[#f1ede4] dark:bg-[#0b1526]"
-                      />
-                    ) : (
-                      <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center"
-                        style={{ background: dom.softBg }}
-                        aria-hidden="true"
-                      >
-                        <dom.Icon size={20} weight="duotone" color={dom.color} />
-                      </div>
-                    )
-                  }
-                  header={
-                    <span className="font-bold" style={{ color: dom.color }}>
-                      {isAr ? dom.ar : dom.en}
+                <li key={`${ex.gameKey}-${idx}`} className="lum-playlist-item">
+                  <button
+                    type="button"
+                    onClick={launchExercise}
+                    className={`lum-playlist-row${isDone ? ' is-done' : ''}${
+                      isUpNext ? ' is-next' : ''
+                    }`}
+                  >
+                    <span
+                      className="lum-tile-icon"
+                      style={{ backgroundColor: dom.color }}
+                      aria-hidden="true"
+                    >
+                      <GameIcon size={21} weight="fill" color="#FFFFFF" />
                     </span>
-                  }
-                  title={title}
-                  after={
-                    isDone ? (
-                      <Badge
-                        colors={{ bg: 'bg-[#0d9488]', text: 'text-white' }}
-                        className="gap-1"
-                      >
-                        <Check size={10} weight="bold" aria-hidden="true" />
-                        <span>{isAr ? 'تم' : 'Done'}</span>
-                      </Badge>
-                    ) : (
-                      <Badge
-                        colors={{
-                          bg: isUpNext
-                            ? 'bg-[#ff7800]'
-                            : 'bg-slate-200 dark:bg-white/15',
-                          text: isUpNext
-                            ? 'text-white'
-                            : 'text-slate-700 dark:text-slate-200',
-                        }}
-                      >
-                        {idx + 1}
-                      </Badge>
-                    )
-                  }
-                />
+
+                    <span className="lum-row-copy">
+                      <span className="lum-row-domain" style={{ color: dom.color }}>
+                        {isAr ? dom.ar : dom.en}
+                      </span>
+                      <span className="lum-row-title">{title}</span>
+                    </span>
+
+                    <span className="lum-row-trailing">
+                      {isDone ? (
+                        <span className="lum-step-done">
+                          <Check size={12} weight="bold" aria-hidden="true" />
+                          <span>{isAr ? 'تم' : 'Done'}</span>
+                        </span>
+                      ) : (
+                        <span className={`lum-step-num${isUpNext ? ' is-next' : ''}`}>
+                          {idx + 1}
+                        </span>
+                      )}
+                      <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
+                    </span>
+                  </button>
+                </li>
               );
             })}
-          </List>
+          </ul>
 
-          <div className="ed-today-footer">
+          {/* Clean Full-Width Pill CTA */}
+          <div className="lum-hero-footer">
             {!wkAllDone ? (
-              <Button
-                large
-                rounded
+              <button
                 type="button"
-                className="nayzak-konsta-cta gap-2"
+                className="lum-primary-cta"
                 onClick={() => {
                   const targetIdx = nextIdx >= 0 ? nextIdx : 0;
                   const ex = wkExercises[targetIdx];
@@ -518,7 +518,7 @@ export default function HomeScreen() {
                   );
                 }}
               >
-                <Play size={16} weight="fill" aria-hidden="true" />
+                <Play size={17} weight="fill" aria-hidden="true" />
                 <span>
                   {wkDoneCount > 0
                     ? isAr
@@ -528,7 +528,7 @@ export default function HomeScreen() {
                     ? 'ابدأ تمرين اليوم'
                     : "Start Today's Workout"}
                 </span>
-              </Button>
+              </button>
             ) : (
               <div className="ed-done-banner">
                 <CheckCircle size={17} weight="fill" aria-hidden="true" />
@@ -540,150 +540,104 @@ export default function HomeScreen() {
               </div>
             )}
           </div>
-        </Card>
+        </section>
 
-        {/* 2. Recommended Next */}
-        <BlockTitle className="w-full !px-1 !mt-1 !mb-1.5 text-[12px] uppercase tracking-wider font-extrabold">
-          {ratedDomains.length > 0
-            ? isAr
-              ? 'أفضل مجال للتطوير الآن'
-              : 'Recommended Focus'
-            : isAr
-            ? 'نقطة بداية مقترحة'
-            : 'Recommended Starter'}
-        </BlockTitle>
-        <List strong inset className="w-full !mx-0 !mt-0 !mb-3.5">
-          <ListItem
-            link
-            strongTitle
-            titleFontSizeIos="text-[15.5px]"
-            linkProps={{
-              role: 'button',
-              tabIndex: 0,
-              onKeyDown: (e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && starterGame) {
-                  e.preventDefault();
-                  handleLaunchGame(starterGame, recommendedDomainId, null);
-                }
-              },
-            }}
+        {/* 2. Secondary Lumosity-Style Modular Grid (Focus + Explore) */}
+        <section className="lum-secondary-grid" aria-label={isAr ? 'المزيد من التدريبات' : 'More workouts'}>
+          {/* Card A: Recommended Focus */}
+          <button
+            type="button"
+            className="lum-module-card lum-module-card--focus"
             onClick={() => {
               if (starterGame) {
                 handleLaunchGame(starterGame, recommendedDomainId, null);
               }
             }}
-            media={
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: recMeta.softBg }}
+          >
+            <div className="lum-module-top">
+              <span
+                className="lum-tile-icon"
+                style={{ backgroundColor: recMeta.color }}
                 aria-hidden="true"
               >
-                <RecIcon size={22} weight="duotone" color={recMeta.color} />
-              </div>
-            }
-            header={
-              <span
-                className="font-bold uppercase tracking-wider text-[11px]"
-                style={{ color: recMeta.color }}
-              >
+                <RecIcon size={21} weight="fill" color="#FFFFFF" />
+              </span>
+              <span className="lum-module-badge">
                 {ratedDomains.length > 0
                   ? isAr
                     ? 'توصية اليوم'
                     : 'FOCUS AREA'
                   : isAr
-                  ? 'بداية مقترحة'
+                  ? 'نقطة البداية'
                   : 'STARTER'}
               </span>
-            }
-            title={`${isAr ? recMeta.ar : recMeta.en}${recBand ? ` · ${recRating}` : ''}`}
-            subtitle={isAr ? recMeta.descAr : recMeta.descEn}
-            after={
-              starterGame ? (
-                <Badge
-                  colors={{
-                    bg: 'bg-[#0b63ce]/12 dark:bg-[#1cb0f6]/20',
-                    text: 'text-[#0b63ce] dark:text-[#60a5fa]',
-                  }}
-                >
-                  {isAr ? 'تدرب' : 'Train'}
-                </Badge>
-              ) : null
-            }
-          />
-        </List>
+            </div>
 
-        {/* 3. Navigation Shortcuts */}
-        <BlockTitle className="w-full !px-1 !mt-1 !mb-1.5 text-[12px] uppercase tracking-wider font-extrabold">
-          {isAr ? 'استكشف' : 'Explore'}
-        </BlockTitle>
-        <List strong inset className="w-full !mx-0 !mt-0 !mb-3.5">
-          <ListItem
-            link
-            strongTitle
-            titleFontSizeIos="text-[15.5px]"
-            linkProps={{
-              role: 'button',
-              tabIndex: 0,
-              onKeyDown: (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  switchTab('domains');
-                }
-              },
-            }}
-            onClick={() => switchTab('domains')}
-            media={
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#eff6ff] text-[#0b63ce] dark:bg-[#0b63ce]/20 dark:text-[#60a5fa]"
+            <div className="lum-module-body">
+              <h3 className="lum-module-title">
+                {isAr ? recMeta.ar : recMeta.en}
+                {recBand ? ` · ${recRating}` : ''}
+              </h3>
+              <p className="lum-module-desc">{isAr ? recMeta.descAr : recMeta.descEn}</p>
+            </div>
+
+            {starterGame && (
+              <div className="lum-module-link">
+                <span>
+                  {isAr
+                    ? `ابدأ: ${starterGame.titleAr || starterGame.titleEn}`
+                    : `Play ${starterGame.titleEn}`}
+                </span>
+                <RowChevron size={15} weight="bold" aria-hidden="true" />
+              </div>
+            )}
+          </button>
+
+          {/* Card B: Quick Shortcuts */}
+          <div className="lum-module-card lum-module-card--list">
+            <button
+              type="button"
+              className="lum-mini-row"
+              onClick={() => switchTab('domains')}
+            >
+              <span
+                className="lum-tile-icon lum-tile-icon--sm"
+                style={{ backgroundColor: '#0B63CE' }}
                 aria-hidden="true"
               >
-                <Compass size={22} weight="duotone" />
-              </div>
-            }
-            header={
-              <span className="font-bold uppercase tracking-wider text-[11px] text-[#0b63ce] dark:text-[#60a5fa]">
-                {isAr ? 'التدريب' : 'TRAINING'}
+                <Compass size={19} weight="fill" color="#FFFFFF" />
               </span>
-            }
-            title={isAr ? 'المجالات الستة' : '6 Cognitive Domains'}
-            subtitle={isAr ? '18 تمريناً مصنفاً' : 'Browse all 18 exercises'}
-          />
-          <ListItem
-            link
-            strongTitle
-            titleFontSizeIos="text-[15.5px]"
-            linkProps={{
-              role: 'button',
-              tabIndex: 0,
-              onKeyDown: (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  switchTab('profile');
-                }
-              },
-            }}
-            onClick={() => switchTab('profile')}
-            media={
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center bg-[#fff4e5] text-[#ff7800] dark:bg-[#ff7800]/20 dark:text-[#ffb012]"
+              <span className="lum-row-copy">
+                <span className="lum-row-title">{isAr ? 'المجالات الستة' : '6 Cognitive Domains'}</span>
+                <span className="lum-mini-sub">{isAr ? '18 لعبة معرفية' : 'Browse all 18 games'}</span>
+              </span>
+              <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              className="lum-mini-row"
+              onClick={() => switchTab('profile')}
+            >
+              <span
+                className="lum-tile-icon lum-tile-icon--sm"
+                style={{ backgroundColor: '#FF7800' }}
                 aria-hidden="true"
               >
-                <ChartPolar size={22} weight="duotone" />
-              </div>
-            }
-            header={
-              <span className="font-bold uppercase tracking-wider text-[11px] text-[#ff7800] dark:text-[#ffb012]">
-                {isAr ? 'الملف المعرفي' : 'INSIGHTS'}
+                <ChartPolar size={19} weight="fill" color="#FFFFFF" />
               </span>
-            }
-            title={isAr ? 'رادار الأداء NPI' : 'Cognitive Radar'}
-            subtitle={isAr ? 'مؤشر 0–1000' : 'Your 0–1000 profile'}
-          />
-        </List>
+              <span className="lum-row-copy">
+                <span className="lum-row-title">{isAr ? 'رادار الأداء NPI' : 'Cognitive Radar'}</span>
+                <span className="lum-mini-sub">{isAr ? 'مؤشر 0–1000' : 'Your 0–1000 profile'}</span>
+              </span>
+              <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
+            </button>
+          </div>
+        </section>
 
-        {/* 4. Tasteful Nayzak PRO Card */}
+        {/* 3. Mobile-Only Slim PRO Strip (Desktop shows PRO inside Left Rail) */}
         {!isPro && (
-          <section className="ed-pro-card">
+          <section className="ed-pro-card md:hidden">
             <div className="ed-pro-copy">
               <div className="ed-pro-head">
                 <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
