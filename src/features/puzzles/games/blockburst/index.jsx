@@ -11,7 +11,7 @@ import { createRng, randomSeed } from '../../shared/rng';
 const CONFIG = getPuzzle('blockburst');
 const N = 8;
 const BEST_KEY = 'mm_blockburst_best';
-const COLORS = ['#e0795f', '#5fa9d8', '#8cc06a', '#e6bd55', '#a98fd6', '#5ec6b6', '#e58fb8'];
+const COLORS = ['#D95A3D', '#2E5EA8', '#4D8F68', '#E3A12B', '#7D5BA6', '#2F949C', '#E07058'];
 
 /* ── Shapes (base; expanded with rotations) ── */
 const BASE = [

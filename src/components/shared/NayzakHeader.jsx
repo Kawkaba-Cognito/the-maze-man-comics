@@ -82,7 +82,7 @@ export default function NayzakHeader({
                 title={isAr ? 'الترقية إلى نيزك PRO' : 'Upgrade to Nayzak PRO'}
                 aria-label={isAr ? 'الترقية إلى نيزك PRO' : 'Upgrade to Nayzak PRO'}
               >
-                <Crown size={13} weight="fill" color="#FFB012" aria-hidden="true" />
+                <Crown size={13} weight="fill" color="#B5482F" aria-hidden="true" />
                 <span>PRO</span>
               </button>
             ))}
@@ -91,13 +91,13 @@ export default function NayzakHeader({
             <div className="duo-stats-group">
               {/* Streak Counter */}
               <div className="duo-stat-pill duo-stat-pill--streak" title={isAr ? `شعلة الحماسة: ${streak} أيام` : `Streak: ${streak} days`}>
-                <Flame size={18} weight="fill" color="#FF7800" />
+                <Flame size={18} weight="fill" color="#B5482F" />
                 <span>{streak}</span>
               </div>
 
               {/* Energy / Points */}
               <div className="duo-stat-pill duo-stat-pill--energy" title={isAr ? `نقاط الطاقة: ${points}` : `Energy: ${points}`}>
-                <Lightning size={18} weight="fill" color="#1CB0F6" />
+                <Lightning size={18} weight="fill" color="#2F4A6D" />
                 <span>{points}</span>
               </div>
             </div>

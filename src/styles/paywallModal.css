@@ -45,18 +45,16 @@
   max-width: 440px;
   max-height: 92vh;
   overflow-y: auto;
-  background: #FAF7F2;
-  color: #0F1E33;
-  border: 2px solid rgba(15, 30, 51, 0.12);
-  border-radius: 28px;
+  background: #F2EEE6;
+  color: #1B1F24;
+  border: 1px solid rgba(27, 31, 36, 0.1);
+  border-radius: 24px;
   padding: 24px 22px 20px;
   text-align: center;
-  box-shadow:
-    0 24px 60px rgba(15, 30, 51, 0.34),
-    0 0 0 1px rgba(255, 176, 18, 0.28);
+  box-shadow: 0 24px 60px rgba(27, 31, 36, 0.22);
   animation: nayzakPaywallPop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
-  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  font-family: 'Inter', 'Cairo', system-ui, sans-serif;
 }
 
 .nayzak-paywall-close {
@@ -66,9 +64,9 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 1.5px solid rgba(15, 30, 51, 0.14);
-  background: #ffffff;
-  color: #0F1E33;
+  border: 1px solid rgba(27, 31, 36, 0.1);
+  background: #FAF8F4;
+  color: #1B1F24;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -79,8 +77,8 @@
 
 .nayzak-paywall-close:hover {
   transform: scale(1.06);
-  background: #0F1E33;
-  color: #FAF7F2;
+  background: #2F4A6D;
+  color: #F2EEE6;
 }
 
 /* Brand Header Row */
@@ -98,29 +96,29 @@
   gap: 5px;
   padding: 5px 12px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #FF7800 0%, #FFB012 100%);
-  color: #0F1E33;
+  background: #2F4A6D;
+  color: #F2EEE6;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.3px;
-  box-shadow: 0 4px 12px rgba(255, 120, 0, 0.26);
+  box-shadow: 0 4px 12px rgba(47, 74, 109, 0.2);
 }
 
 /* Title & Subtitle */
 .nayzak-paywall-title {
   margin: 0 0 6px;
   font-size: clamp(20px, 4.8vw, 23px);
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1.25;
-  color: #0F1E33;
+  color: #1B1F24;
 }
 
 .nayzak-paywall-subtitle {
   margin: 0 0 16px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.48;
-  color: #475569;
+  color: #5C6066;
 }
 
 /* Value Propositions */
@@ -140,9 +138,9 @@
   gap: 11px;
   padding: 9px 12px;
   border-radius: 14px;
-  background: #ffffff;
-  border: 1.5px solid rgba(15, 30, 51, 0.08);
-  box-shadow: 0 2px 6px rgba(15, 30, 51, 0.04);
+  background: #FAF8F4;
+  border: 1px solid rgba(27, 31, 36, 0.08);
+  box-shadow: 0 2px 6px rgba(27, 31, 36, 0.04);
 }
 
 .nayzak-paywall-perk-icon {
@@ -152,15 +150,15 @@
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: rgba(11, 99, 206, 0.08);
+  background: rgba(47, 74, 109, 0.09);
   flex-shrink: 0;
 }
 
 .nayzak-paywall-perk-text {
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.35;
-  color: #0F1E33;
+  color: #1B1F24;
 }
 
 /* Plan Selector */
@@ -179,9 +177,9 @@
   gap: 11px;
   padding: 13px 14px;
   border-radius: 18px;
-  background: #ffffff;
-  border: 2px solid rgba(15, 30, 51, 0.12);
-  color: #0F1E33;
+  background: #FAF8F4;
+  border: 1.5px solid rgba(27, 31, 36, 0.1);
+  color: #1B1F24;
   cursor: pointer;
   text-align: start;
   font-family: inherit;
@@ -190,18 +188,18 @@
 }
 
 .nayzak-plan-option:hover {
-  border-color: #1CB0F6;
+  border-color: #2F4A6D;
 }
 
 .nayzak-plan-option.is-selected {
-  background: linear-gradient(135deg, rgba(11, 99, 206, 0.06) 0%, rgba(255, 176, 18, 0.1) 100%);
-  border-color: #0B63CE;
-  box-shadow: 0 6px 18px rgba(11, 99, 206, 0.14);
+  background: rgba(47, 74, 109, 0.06);
+  border-color: #2F4A6D;
+  box-shadow: 0 6px 18px rgba(47, 74, 109, 0.12);
 }
 
 .nayzak-plan-option.is-annual.is-selected {
-  border-color: #FF7800;
-  box-shadow: 0 6px 20px rgba(255, 120, 0, 0.18);
+  border-color: #2F4A6D;
+  box-shadow: 0 6px 20px rgba(47, 74, 109, 0.14);
 }
 
 .nayzak-plan-save {
@@ -210,36 +208,32 @@
   inset-inline-end: 14px;
   padding: 2px 9px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #FF7800 0%, #FFB012 100%);
-  color: #0F1E33;
+  background: #B5482F;
+  color: #FAF8F4;
   font-size: 10.5px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.2px;
-  box-shadow: 0 2px 8px rgba(255, 120, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(181, 72, 47, 0.25);
 }
 
 .nayzak-plan-radio {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid #94a3b8;
+  border: 2px solid #8A9A8C;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   background: transparent;
-  color: #ffffff;
+  color: #FAF8F4;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.nayzak-plan-option.is-selected .nayzak-plan-radio {
-  background: #0B63CE;
-  border-color: #0B63CE;
-}
-
+.nayzak-plan-option.is-selected .nayzak-plan-radio,
 .nayzak-plan-option.is-annual.is-selected .nayzak-plan-radio {
-  background: #FF7800;
-  border-color: #FF7800;
+  background: #2F4A6D;
+  border-color: #2F4A6D;
 }
 
 .nayzak-plan-info {
@@ -252,25 +246,25 @@
 
 .nayzak-plan-name {
   font-size: 14px;
-  font-weight: 900;
-  color: #0F1E33;
+  font-weight: 700;
+  color: #1B1F24;
 }
 
 .nayzak-plan-sub {
   font-size: 11.5px;
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 500;
+  color: #5C6066;
 }
 
 .nayzak-plan-price {
   font-size: 14px;
-  font-weight: 900;
-  color: #0B63CE;
+  font-weight: 700;
+  color: #2F4A6D;
   white-space: nowrap;
 }
 
 .nayzak-plan-option.is-annual.is-selected .nayzak-plan-price {
-  color: #FF7800;
+  color: #2F4A6D;
 }
 
 /* Primary CTA */
@@ -278,38 +272,34 @@
   width: 100%;
   padding: 14px 20px;
   border: none;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #FF7800 0%, #FFB012 100%);
-  color: #0F1E33;
+  border-radius: 999px;
+  background: #2F4A6D;
+  color: #F2EEE6;
   font-family: inherit;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow:
-    0 4px 0 #CC5E00,
-    0 10px 22px rgba(255, 120, 0, 0.28);
+  border-bottom: 3px solid #233854;
+  box-shadow: 0 8px 20px rgba(47, 74, 109, 0.22);
   transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
 }
 
 .nayzak-paywall-cta:hover {
-  filter: brightness(1.04);
+  filter: brightness(1.06);
 }
 
 .nayzak-paywall-cta:active {
-  transform: translateY(3px);
-  box-shadow:
-    0 1px 0 #CC5E00,
-    0 4px 10px rgba(255, 120, 0, 0.2);
+  transform: translateY(1px);
 }
 
 .nayzak-paywall-secondary {
   margin-top: 10px;
   background: transparent;
   border: none;
-  color: #0B63CE;
+  color: #2F4A6D;
   font-family: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
   padding: 4px 8px;
@@ -318,8 +308,8 @@
 .nayzak-paywall-footnote {
   margin: 12px 0 0;
   font-size: 11.5px;
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 500;
+  color: #5C6066;
 }
 
 /* Inline Confirmation State */
@@ -439,9 +429,9 @@ html[data-home-theme='dark'] .nayzak-paywall-confirm-icon {
   margin: 2px auto 8px;
   padding: 6px 14px 4px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #fff5d6 0%, #ffe6aa 100%);
-  border: 2px solid #0f1e33;
-  box-shadow: 0 3px 0 #0f1e33;
+  background: #FAF8F4;
+  border: 1px solid rgba(27, 31, 36, 0.1);
+  box-shadow: 0 6px 16px rgba(27, 31, 36, 0.06);
   max-width: 240px;
 }
 

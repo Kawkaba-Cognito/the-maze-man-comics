@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import C3dProtoChrome from '../../../../shared/C3dProtoChrome';
-import { paintSky } from '../../../../shared/board2d';
-import { assetUrl } from '../../../../../../lib/assetUrl';
-import { GAME_COLORS, GAME_INK, GAME_STIMULUS, shadeOf } from '../../../../shared/gamePalette';
+import { GAME_COLORS, GAME_FX, GAME_INK, GAME_SKY, GAME_STIMULUS, shadeOf } from '../../../../shared/gamePalette';
 import { makeRng } from '../../../../shared/rng';
 import { clamp } from '../../../../../../lib/math';
 import { genGate, levelCfg, LADDER_LEVELS } from './mathGatesData.js';
@@ -106,16 +104,6 @@ export default function MathGatesBoard2D({
   const coachHostRef = useRef(null);
   const apiRef = useRef({});
   const trialLogRef = useRef(null);
-  /* The runner's artwork — the same black-planet Kawkab the Training hub uses.
-   * Loaded once here rather than per frame; the draw loop skips it until
-   * `complete`, so a slow load costs a few frames of an empty lane, never a
-   * stall. Replaces a 3.4 MB GLB and a second WebGL context. */
-  const kawkabImgRef = useRef(null);
-  if (kawkabImgRef.current === null && typeof Image !== 'undefined') {
-    const img = new Image();
-    img.src = assetUrl('Assets/characters/kawkab/kawkab-planet.webp');
-    kawkabImgRef.current = img;
-  }
   const playSfxRef = useRef(playSfx);
   const resultRef = useRef(onResult);
   const awardRef = useRef(awardFreeRun);
@@ -366,100 +354,103 @@ export default function MathGatesBoard2D({
       if (s.flash) { s.flash.t -= dt; if (s.flash.t <= 0) s.flash = null; }
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      paintSky(ctx, W, H);
+      ctx.clearRect(0, 0, W, H);
 
-      /* The play column.
-       *
-       * Lanes used to span the full canvas. On a 1366px desktop that made each
-       * lane ~455px wide, so the runner had to travel half a screen to switch
-       * and the three gate answers sat too far apart to compare at a glance —
-       * on a task scored in hundreds of milliseconds. The column is capped and
-       * centred, so the game reads the same on a phone and a monitor.
-       *
-       * From column() — the pointer handler reads the identical numbers. */
       const { colW, colX, laneW } = column();
       const laneX = (i) => colX + i * laneW;
       const runnerY = H * RUNNER_LINE;
 
-      /* The equation, on the board and large.
-       *
-       * It used to live only in the chrome's hint line — small text in the
-       * header. That is the question the whole round asks, and it was the least
-       * legible thing on screen. The 3D version had it as a full-width banner
-       * for exactly this reason; this is that banner, drawn directly. */
+      // Sculpted Equation Plaque (Soft Clay Cushion)
       if (s.gate) {
         const eqTxt = `${s.gate.eq.text} = ?`;
-        const eqSize = Math.round(Math.min(W * 0.085, H * 0.11, 60));
+        const eqSize = Math.round(Math.min(W * 0.085, H * 0.11, 56));
         ctx.save();
-        ctx.font = `800 ${eqSize}px Outfit, system-ui, sans-serif`;
+        ctx.font = `800 ${eqSize}px "Archivo Black", Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const tw = ctx.measureText(eqTxt).width;
-        const padX = eqSize * 0.55;
+        const padX = eqSize * 0.6;
         const bx = W / 2 - tw / 2 - padX;
-        /*
-         * 0.055 -> 0.125 of the height.
-         *
-         * The chrome bar (.ct-fq-bar, ~48px plus its 8px offset) is a DOM layer
-         * ON TOP of this canvas, and at 0.055 the banner started around y=35 —
-         * so its top third sat underneath the bar and the equation, the one
-         * thing the round is actually asking, was the least readable object on
-         * screen. Measured: bar occupies y 8-56, banner ran 35-125.
-         *
-         * Expressed as a fraction rather than a pixel offset because the canvas
-         * is sized in CSS pixels that change with the viewport; 0.125 clears the
-         * bar at every height the play area is given, with margin to spare.
-         */
-        const by = Math.max(160, H * 0.20);
-        const bh = eqSize * 1.5;
-        ctx.fillStyle = 'rgba(242, 236, 228, 0.95)';
+        const by = Math.max(152, H * 0.19);
+        const bh = eqSize * 1.55;
+        ctx.fillStyle = GAME_FX.shadowSoft;
         ctx.beginPath();
-        ctx.roundRect(bx, by, tw + padX * 2, bh, 18);
+        ctx.roundRect(bx, by + 6, tw + padX * 2, bh, 22);
         ctx.fill();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = GAME_INK;
+        ctx.fillStyle = GAME_SKY.clayTop;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, tw + padX * 2, bh, 22);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = GAME_FX.glint;
         ctx.stroke();
         ctx.fillStyle = GAME_INK;
-        ctx.fillText(eqTxt, W / 2, by + bh / 2);
+        ctx.fillText(eqTxt, W / 2, by + bh / 2 + 1);
         ctx.restore();
       }
 
-      // Lane strips — the occupied one is brighter, so "which lane am I in"
-      // never depends on finding a small runner.
+      // Rounded Polymer Clay Track Lanes
       for (let i = 0; i < LANES; i++) {
         ctx.save();
-        ctx.globalAlpha = i === s.lane ? 0.26 : 0.13;
         ctx.fillStyle = LANE_COLORS[i];
-        ctx.fillRect(laneX(i) + 4, H * runTop(), laneW - 8, runnerY - H * runTop() + 10);
+        ctx.globalAlpha = i === s.lane ? 0.24 : 0.12;
+        ctx.beginPath();
+        ctx.roundRect(laneX(i) + 6, H * runTop(), laneW - 12, runnerY - H * runTop() + 18, 20);
+        ctx.fill();
+        if (i === s.lane) {
+          ctx.globalAlpha = 0.55;
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = LANE_COLORS[i];
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
-      /* Kawkab, drawn straight onto this canvas.
-       *
-       * This used to publish a position for DrKawkabLayer, a three.js layer that
-       * loaded Assets/biped-v1.glb — 3.4 MB and a second WebGL context, to draw
-       * one small figure over a 2D board. Its own comment justified that by
-       * saying he "exists only as the GLB" and that the Training hub used the
-       * same model. Both stopped being true when the hub moved to the 2D black
-       * planet: there is now a real 2D Kawkab, 86 KB, already in the bundle.
-       *
-       * So the character is one drawImage call. Same mascot as the hub, ~40x
-       * lighter, no WebGL, and it composites in the right order — above the lane
-       * strips, below the equation banner — instead of floating in a layer above
-       * everything. */
+      // Sculpted 3D-shaded Polymer Clay Runner Glider (leans smoothly across lanes)
       const rx = colX + s.runnerX * colW;
-      const rr = Math.min(laneW * 0.2, 30);
-      const kb = kawkabImgRef.current;
-      if (kb && kb.complete && kb.naturalWidth) {
-        const kh = rr * 3.4;
-        const kw = kh * (kb.naturalWidth / kb.naturalHeight);
-        ctx.save();
-        ctx.translate(rx, runnerY + rr * 0.7);
-        // Lean into the turn — the one bit of character the GLB gave for free.
-        ctx.rotate(((laneCentre(s.lane) - s.runnerX) * 6 * Math.PI) / 180);
-        ctx.drawImage(kb, -kw / 2, -kh, kw, kh);
-        ctx.restore();
-      }
+      const rr = Math.min(laneW * 0.24, 34);
+      const lean = ((laneCentre(s.lane) - s.runnerX) * 7 * Math.PI) / 180;
+      ctx.save();
+      ctx.translate(rx, runnerY);
+      ctx.rotate(lean);
+      // Soft ground shadow beneath clay glider
+      ctx.fillStyle = GAME_FX.shadowSoft;
+      ctx.beginPath();
+      ctx.ellipse(0, rr * 0.42, rr * 1.15, rr * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Main cream swept wings with terracotta wingtips
+      ctx.fillStyle = GAME_SKY.clayLow;
+      ctx.beginPath();
+      ctx.roundRect(-rr * 1.35, -rr * 0.2, rr * 2.7, rr * 0.56, rr * 0.25);
+      ctx.fill();
+      ctx.fillStyle = GAME_SKY.clayTop;
+      ctx.beginPath();
+      ctx.roundRect(-rr * 1.35, -rr * 0.28, rr * 2.7, rr * 0.48, rr * 0.22);
+      ctx.fill();
+      // Terracotta coral wingtip caps
+      ctx.fillStyle = GAME_STIMULUS[1];
+      ctx.beginPath();
+      ctx.arc(-rr * 1.22, -rr * 0.04, rr * 0.2, 0, Math.PI * 2);
+      ctx.arc(rr * 1.22, -rr * 0.04, rr * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Cobalt polymer clay fuselage pod + ochre nose spinner
+      ctx.fillStyle = shadeOf(GAME_STIMULUS[0]);
+      ctx.beginPath();
+      ctx.ellipse(0, 0.05 * rr, rr * 0.48, rr * 0.92, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = GAME_STIMULUS[0];
+      ctx.beginPath();
+      ctx.ellipse(0, -rr * 0.06, rr * 0.46, rr * 0.88, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = GAME_STIMULUS[3];
+      ctx.beginPath();
+      ctx.arc(0, -rr * 0.95, rr * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = GAME_FX.domeTop;
+      ctx.beginPath();
+      ctx.arc(-rr * 0.12, -rr * 0.28, rr * 0.18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       // The gate: three answers, one per lane.
       if (s.gate) {
@@ -474,25 +465,30 @@ export default function MathGatesBoard2D({
             else if (s.flash.kind === 'bad' && i === s.flash.lane) fill = GAME_COLORS.bad.fill;
           }
           ctx.save();
+          // Grounded clay shadow + extruded lip + radial dome highlight
+          ctx.fillStyle = GAME_FX.shadowSoft;
+          ctx.beginPath();
+          ctx.ellipse(cx, gy + tileR * 0.24, tileR * 0.96, tileR * 0.86, 0, 0, Math.PI * 2);
+          ctx.fill();
           ctx.fillStyle = shadeOf(fill);
           ctx.beginPath();
-          ctx.arc(cx, gy + tileR * 0.08, tileR, 0, Math.PI * 2);
+          ctx.arc(cx, gy + tileR * 0.12, tileR, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = fill;
           ctx.beginPath();
           ctx.arc(cx, gy, tileR, 0, Math.PI * 2);
           ctx.fill();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = GAME_INK;
-          ctx.stroke();
-          ctx.fillStyle = '#fff';
-          ctx.font = `800 ${Math.round(tileR * 0.78)}px Outfit, system-ui, sans-serif`;
+          const dome = ctx.createRadialGradient(cx - tileR * 0.34, gy - tileR * 0.36, tileR * 0.08, cx, gy, tileR);
+          dome.addColorStop(0, GAME_FX.domeTop);
+          dome.addColorStop(0.6, GAME_FX.domeFade);
+          dome.addColorStop(1, GAME_FX.domeEdge);
+          ctx.fillStyle = dome;
+          ctx.fill();
+          ctx.fillStyle = GAME_SKY.claySurface;
+          ctx.font = `800 ${Math.round(tileR * 0.78)}px "Archivo Black", Inter, system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = GAME_INK;
-          ctx.strokeText(String(val), cx, gy);
-          ctx.fillText(String(val), cx, gy);
+          ctx.fillText(String(val), cx, gy + 1);
           ctx.restore();
         });
       }

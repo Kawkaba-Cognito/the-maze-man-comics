@@ -20,6 +20,7 @@ import './styles/comicCartoonTheme.css';
 import './styles/konstaTheme.css';
 import './styles/duolingoTheme.css';
 import './styles/duolingoGames.css';
+import './styles/lightClayTheme.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { guardAgainstFraming } from './lib/frameGuard';

@@ -84,22 +84,22 @@ export function DesktopNavRail() {
       <div className="nayzak-rail-footer">
         {isPro ? (
           <div className="nayzak-rail-pro-active">
-            <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
+            <Crown size={16} weight="fill" color="#B5482F" aria-hidden="true" />
             <span>{isAr ? 'عضوية PRO مفعّلة' : 'Nayzak PRO Active'}</span>
           </div>
         ) : (
           <div className="nayzak-rail-pro-card">
             <div className="nayzak-rail-pro-top">
               <img
-                src={assetUrl('Assets/brand/cast-2026/shofata-cheer.webp')}
+                src={assetUrl('Assets/brand/clay-2026/brand-emblem.webp')}
                 alt=""
                 draggable="false"
                 className="nayzak-rail-mascot"
               />
               <div>
                 <div className="nayzak-rail-pro-title">
-                  <Crown size={13} weight="fill" color="#FFB012" aria-hidden="true" />
-                  <span>{isAr ? 'عائلة نيزك PRO' : 'Nayzak PRO'}</span>
+                  <Crown size={13} weight="fill" color="#F2EEE6" aria-hidden="true" />
+                  <span>{isAr ? 'نيزك PRO' : 'Nayzak PRO'}</span>
                 </div>
                 <p className="nayzak-rail-pro-sub">
                   {isAr ? 'إحصائيات وتدريبات بلا حدود' : 'Full insights & unlimited training'}

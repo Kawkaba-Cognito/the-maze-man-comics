@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { startCanvasLoop } from '../../../../shared/canvasLoop';
-import { drawPiece, paintSky } from '../../../../shared/board2d';
-import { GAME_COLORS } from '../../../../shared/gamePalette';
+import { drawPiece } from '../../../../shared/board2d';
+import { GAME_COLORS, GAME_FX, GAME_SKY } from '../../../../shared/gamePalette';
 
 /*
  * MotBoard2D — the Target Tracking arena.
@@ -62,13 +62,6 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interac
     let h = 1;
     let lastPaint = 0;
 
-    // A sparse, fixed speckle field — the light-key echo of the 3D scene's
-    // starfield. Generated once in normalised space so it doesn't crawl on
-    // resize, and drawn under everything.
-    const specks = Array.from({ length: 90 }, () => ({
-      x: Math.random(), y: Math.random(), r: 0.4 + Math.random() * 0.9,
-    }));
-
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = wrap.clientWidth || 1;
@@ -86,62 +79,43 @@ export default function MotBoard2D({ dotsRef, fieldRef, phaseRef, phase, interac
       if (phaseRef.current !== 'track' && now - lastPaint < 100) return true;
       lastPaint = now;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      paintSky(ctx, w, h);
-
-      ctx.save();
-      ctx.fillStyle = 'rgba(254, 254, 254, 0.55)';
-      for (const s of specks) {
-        ctx.beginPath();
-        ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
+      ctx.clearRect(0, 0, w, h);
 
       const f = fieldRef.current;
       const dots = dotsRef.current;
       if (!f || !f.w || !Array.isArray(dots)) return true;
 
-      // Subtle astrolabe astronomical guide markings (Cancellation Task celestial echo)
-      const cx = f.x0 + f.w / 2;
-      const cy = f.y0 + f.h / 2;
-      const maxR = Math.min(f.w, f.h) * 0.42;
+      // Sculpted Matte Polymer Clay Arena Tray resting above the studio stage
+      const rad = 24;
       ctx.save();
-      ctx.strokeStyle = GAME_COLORS.accent.fill;
-      ctx.globalAlpha = 0.12;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 6]);
+      ctx.fillStyle = GAME_FX.shadowSoft;
       ctx.beginPath();
-      ctx.arc(cx, cy, maxR * 0.45, 0, Math.PI * 2);
-      ctx.arc(cx, cy, maxR * 0.9, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx - maxR * 0.98, cy);
-      ctx.lineTo(cx + maxR * 0.98, cy);
-      ctx.moveTo(cx, cy - maxR * 0.98);
-      ctx.lineTo(cx, cy + maxR * 0.98);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+      ctx.roundRect(f.x0, f.y0 + 7, f.w, f.h, rad);
+      ctx.fill();
 
-      // Arena bounds with corner accents — the dots bounce off this
-      ctx.save();
-      ctx.strokeStyle = GAME_COLORS.accent.fill;
-      ctx.globalAlpha = 0.5;
-      ctx.lineWidth = 2.5;
-      const rad = 16;
+      const trayGrad = ctx.createLinearGradient(0, f.y0, 0, f.y0 + f.h);
+      trayGrad.addColorStop(0, GAME_SKY.clayTop);
+      trayGrad.addColorStop(1, GAME_SKY.clayLow);
+      ctx.fillStyle = trayGrad;
       ctx.beginPath();
       ctx.roundRect(f.x0, f.y0, f.w, f.h, rad);
+      ctx.fill();
+
+      ctx.strokeStyle = GAME_FX.glint;
+      ctx.lineWidth = 3;
       ctx.stroke();
 
-      // Astrolabe corner ticks
-      const cr = 14;
-      ctx.globalAlpha = 0.75;
+      // Clean inlaid center target ring
+      const cx = f.x0 + f.w / 2;
+      const cy = f.y0 + f.h / 2;
+      const maxR = Math.min(f.w, f.h) * 0.38;
+      ctx.strokeStyle = GAME_FX.clayRing;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(f.x0, f.y0 + cr); ctx.lineTo(f.x0, f.y0); ctx.lineTo(f.x0 + cr, f.y0);
-      ctx.moveTo(f.x0 + f.w - cr, f.y0); ctx.lineTo(f.x0 + f.w, f.y0); ctx.lineTo(f.x0 + f.w, f.y0 + cr);
-      ctx.moveTo(f.x0, f.y0 + f.h - cr); ctx.lineTo(f.x0, f.y0 + f.h); ctx.lineTo(f.x0 + cr, f.y0 + f.h);
-      ctx.moveTo(f.x0 + f.w - cr, f.y0 + f.h); ctx.lineTo(f.x0 + f.w, f.y0 + f.h); ctx.lineTo(f.x0 + f.w, f.y0 + f.h - cr);
+      ctx.arc(cx, cy, maxR * 0.48, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxR * 0.92, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
 

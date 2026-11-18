@@ -30,19 +30,27 @@ import {
   gameRating,
 } from '../../features/training/rating';
 import { loadWorkout } from '../../features/workout/workoutState';
-import { NAYZAK_CAST } from '../../data/nayzakCast';
 import NayzakHeader from '../shared/NayzakHeader';
 import { assetUrl } from '../../lib/assetUrl';
+
+const CLAY_TOKENS = [
+  { id: 'emblem', url: 'Assets/brand/clay-2026/brand-emblem.webp', en: 'Nayzak Emblem', ar: 'شعار نيزك' },
+  { id: 'today', url: 'Assets/brand/clay-2026/today-hero.webp', en: 'Studio Tray', ar: 'صينية الاستوديو' },
+  { id: 'attention', url: 'Assets/brand/clay-2026/attention.webp', en: 'Focus Sphere', ar: 'كرة التركيز' },
+  { id: 'memory', url: 'Assets/brand/clay-2026/memory.webp', en: 'Memory Grid', ar: 'شبكة الذاكرة' },
+  { id: 'reasoning', url: 'Assets/brand/clay-2026/reasoning.webp', en: 'Study Diorama', ar: 'مجسم التحليل' },
+  { id: 'flexibility', url: 'Assets/brand/clay-2026/flexibility.webp', en: 'Balance Scale', ar: 'ميزان المرونة' },
+];
 
 const XP_PER_LEVEL = 200;
 
 const DOMAIN_DISPLAY = {
-  attention: { en: 'Attention', ar: 'انتباه', color: '#FF7800', Icon: Crosshair },
-  speed: { en: 'Speed', ar: 'سرعة', color: '#0B63CE', Icon: Lightning },
-  memory: { en: 'Memory', ar: 'ذاكرة', color: '#1CB0F6', Icon: Brain },
-  language: { en: 'Language', ar: 'لغة', color: '#0D9488', Icon: ChatCircleText },
-  reasoning: { en: 'Logic', ar: 'منطق', color: '#4F46E5', Icon: PuzzlePiece },
-  flexibility: { en: 'Flexibility', ar: 'مرونة', color: '#DF4E32', Icon: ArrowsClockwise },
+  attention: { en: 'Attention', ar: 'انتباه', color: '#2F4A6D', Icon: Crosshair },
+  speed: { en: 'Speed', ar: 'سرعة', color: '#B5482F', Icon: Lightning },
+  memory: { en: 'Memory', ar: 'ذاكرة', color: '#5F7463', Icon: Brain },
+  language: { en: 'Language', ar: 'لغة', color: '#8A9A8C', Icon: ChatCircleText },
+  reasoning: { en: 'Logic', ar: 'منطق', color: '#3B4D63', Icon: PuzzlePiece },
+  flexibility: { en: 'Flexibility', ar: 'مرونة', color: '#7B5E4B', Icon: ArrowsClockwise },
 };
 
 const RADAR_RINGS = [0.25, 0.5, 0.75, 1];
@@ -122,11 +130,11 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
     })
     .join(' ');
 
-  const gridStroke = isDark ? 'rgba(148, 163, 184, 0.22)' : 'rgba(15, 30, 51, 0.12)';
-  const outerStroke = isDark ? 'rgba(148, 163, 184, 0.36)' : 'rgba(15, 30, 51, 0.22)';
-  const labelColor = isDark ? '#E2E8F0' : '#0F1E33';
-  const scoreColor = isDark ? '#94A3B8' : '#475569';
-  const dotStroke = isDark ? '#0F1E33' : '#FFFFFF';
+  const gridStroke = isDark ? 'rgba(242, 238, 230, 0.16)' : 'rgba(27, 31, 36, 0.1)';
+  const outerStroke = isDark ? 'rgba(242, 238, 230, 0.28)' : 'rgba(27, 31, 36, 0.2)';
+  const labelColor = isDark ? '#F2EEE6' : '#1B1F24';
+  const scoreColor = isDark ? '#B4AEA2' : '#5C6066';
+  const dotStroke = isDark ? '#1D232B' : '#FAF8F4';
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '4px 0 12px' }}>
@@ -141,7 +149,7 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
           <polygon
             key={RADAR_RINGS[idx]}
             points={pts}
-            fill={idx === ringPolygons.length - 1 ? (isDark ? 'rgba(15, 30, 51, 0.35)' : 'rgba(11, 99, 206, 0.03)') : 'none'}
+            fill={idx === ringPolygons.length - 1 ? (isDark ? 'rgba(47, 74, 109, 0.2)' : 'rgba(47, 74, 109, 0.04)') : 'none'}
             stroke={idx === ringPolygons.length - 1 ? outerStroke : gridStroke}
             strokeWidth={idx === ringPolygons.length - 1 ? '1.5' : '1'}
           />
@@ -165,8 +173,8 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
           <>
             <polygon
               points={dataPoints}
-              fill="rgba(11, 99, 206, 0.22)"
-              stroke="#0B63CE"
+              fill={isDark ? 'rgba(138, 154, 140, 0.26)' : 'rgba(47, 74, 109, 0.2)'}
+              stroke={isDark ? '#8A9A8C' : '#2F4A6D'}
               strokeWidth="2.5"
               strokeLinejoin="round"
             />
@@ -177,7 +185,7 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
                   cx={a.vertex.x.toFixed(1)}
                   cy={a.vertex.y.toFixed(1)}
                   r="4.5"
-                  fill="#FF7800"
+                  fill="#B5482F"
                   stroke={dotStroke}
                   strokeWidth="2"
                 />
@@ -187,8 +195,8 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
         ) : (
           <polygon
             points={baselinePoints}
-            fill={isDark ? 'rgba(11, 99, 206, 0.08)' : 'rgba(11, 99, 206, 0.06)'}
-            stroke={isDark ? 'rgba(28, 176, 246, 0.42)' : 'rgba(11, 99, 206, 0.35)'}
+            fill={isDark ? 'rgba(138, 154, 140, 0.1)' : 'rgba(47, 74, 109, 0.06)'}
+            stroke={isDark ? 'rgba(138, 154, 140, 0.45)' : 'rgba(47, 74, 109, 0.35)'}
             strokeWidth="1.75"
             strokeDasharray="5 4"
             strokeLinejoin="round"
@@ -204,8 +212,8 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
               textAnchor={a.anchor}
               fill={labelColor}
               fontSize="11.5"
-              fontWeight="800"
-              fontFamily="Outfit, Cairo, system-ui, sans-serif"
+              fontWeight="700"
+              fontFamily="Inter, Cairo, system-ui, sans-serif"
             >
               {isAr ? a.meta.ar : a.meta.en}
             </text>
@@ -213,10 +221,10 @@ function CognitiveRadarChart({ values, isAr, isDark, hasAnyRating }) {
               x={a.lx.toFixed(1)}
               y={(a.ly + 13).toFixed(1)}
               textAnchor={a.anchor}
-              fill={a.numeric != null ? '#0B63CE' : scoreColor}
+              fill={a.numeric != null ? (isDark ? '#8A9A8C' : '#2F4A6D') : scoreColor}
               fontSize="10.5"
-              fontWeight="900"
-              fontFamily="Outfit, Cairo, system-ui, sans-serif"
+              fontWeight="800"
+              fontFamily="Inter, Cairo, system-ui, sans-serif"
             >
               {a.numeric != null ? a.numeric : '—'}
             </text>
@@ -301,15 +309,13 @@ export default function ProfileScreen() {
   }
 
   const resolvedAvatar =
-    profileData.avatar &&
-    (profileData.avatar.includes('Assets/brand/cast-2026/') ||
-      (profileData.avatar.includes('/') && !profileData.avatar.includes('nayzak_unified_leader') && !profileData.avatar.includes('kawkab.webp')))
+    profileData.avatar && profileData.avatar.includes('Assets/brand/clay-2026/')
       ? assetUrl(profileData.avatar)
-      : assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
+      : assetUrl('Assets/brand/clay-2026/brand-emblem.webp');
 
-  const selectedCastMember =
-    NAYZAK_CAST.find((c) => assetUrl(c.avatarUrl) === resolvedAvatar || c.avatarUrl === resolvedAvatar) ||
-    NAYZAK_CAST[0];
+  const selectedClayToken =
+    CLAY_TOKENS.find((c) => assetUrl(c.url) === resolvedAvatar || c.url === resolvedAvatar) ||
+    CLAY_TOKENS[0];
 
   const StrongestIcon = strongestDomain ? DOMAIN_DISPLAY[strongestDomain.id].Icon : null;
   const FocusIcon = focusDomain ? DOMAIN_DISPLAY[focusDomain.id].Icon : null;
@@ -358,7 +364,7 @@ export default function ProfileScreen() {
                     alt={profileData.username}
                     draggable="false"
                     onError={(e) => {
-                      const fallback = assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
+                      const fallback = assetUrl('Assets/brand/clay-2026/brand-emblem.webp');
                       if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
                     }}
                   />
@@ -369,11 +375,9 @@ export default function ProfileScreen() {
               </div>
 
               <h2 className="duo-profile-name">{profileData.username}</h2>
-              {selectedCastMember && (
+              {selectedClayToken && (
                 <div className="nayzak-profile-cast-tag">
-                  <span>{isAr ? selectedCastMember.nameAr : selectedCastMember.nameEn}</span>
-                  <span>·</span>
-                  <span>{isAr ? selectedCastMember.roleAr : selectedCastMember.roleEn}</span>
+                  <span>{isAr ? selectedClayToken.ar : selectedClayToken.en}</span>
                 </div>
               )}
 
@@ -383,24 +387,24 @@ export default function ProfileScreen() {
                   <div className="duo-xp-fill" style={{ width: `${Math.max(6, pct)}%` }} />
                 </div>
                 <div className="duo-xp-label">
-                  {globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP · {xpToNext(globalXP)} {isAr ? 'للمستوى التالي' : 'to next level'}
+                  <bdi dir="ltr">{globalXP % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</bdi> · {xpToNext(globalXP)} {isAr ? 'للمستوى التالي' : 'to next level'}
                 </div>
               </div>
 
-              {/* Avatar Cast Picker */}
+              {/* Clay Token Picker */}
               {showPicker && (
                 <div className="duo-pose-picker">
-                  {NAYZAK_CAST.map((c) => {
-                    const selected = resolvedAvatar === assetUrl(c.avatarUrl);
+                  {CLAY_TOKENS.map((c) => {
+                    const selected = resolvedAvatar === assetUrl(c.url);
                     return (
                       <button
                         key={c.id}
                         type="button"
                         className={`duo-pose-btn ${selected ? 'is-selected' : ''}`}
-                        onClick={() => setAvatar(c.avatarUrl)}
-                        title={isAr ? c.nameAr : c.nameEn}
+                        onClick={() => setAvatar(c.url)}
+                        title={isAr ? c.ar : c.en}
                       >
-                        <img src={assetUrl(c.avatarUrl)} alt={isAr ? c.nameAr : c.nameEn} draggable="false" />
+                        <img src={assetUrl(c.url)} alt={isAr ? c.ar : c.en} draggable="false" />
                       </button>
                     );
                   })}
@@ -412,21 +416,21 @@ export default function ProfileScreen() {
             <section className="duo-stats-grid lum-stats-compact">
               <div className="duo-stat-card">
                 <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Flame size={18} weight="fill" color="#FF7800" aria-hidden="true" />
+                  <Flame size={18} weight="fill" color="#B5482F" aria-hidden="true" />
                   <span>{displayStreak}</span>
                 </span>
                 <span className="duo-stat-card-lbl">{isAr ? 'الأيام' : 'Streak'}</span>
               </div>
               <div className="duo-stat-card">
                 <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Lightning size={18} weight="fill" color="#0B63CE" aria-hidden="true" />
+                  <Lightning size={18} weight="fill" color="#2F4A6D" aria-hidden="true" />
                   <span>{globalXP}</span>
                 </span>
                 <span className="duo-stat-card-lbl">{isAr ? 'النقاط' : 'Total XP'}</span>
               </div>
               <div className="duo-stat-card">
                 <span className="duo-stat-card-val" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <Trophy size={18} weight="fill" color="#FFB012" aria-hidden="true" />
+                  <Trophy size={18} weight="fill" color="#8A9A8C" aria-hidden="true" />
                   <span>{totalSessionsCount}</span>
                 </span>
                 <span className="duo-stat-card-lbl">{isAr ? 'التدريبات' : 'Sessions'}</span>
@@ -439,7 +443,7 @@ export default function ProfileScreen() {
 
               <div className="duo-row-item">
                 <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
-                  <span className="lum-tile-icon lum-tile-icon--xs" style={{ backgroundColor: '#0B63CE' }} aria-hidden="true">
+                  <span className="lum-tile-icon lum-tile-icon--xs" style={{ backgroundColor: '#2F4A6D' }} aria-hidden="true">
                     <Globe size={16} weight="fill" color="#FFFFFF" />
                   </span>
                   <span>{isAr ? 'اللغة' : 'Language'}</span>
@@ -460,7 +464,7 @@ export default function ProfileScreen() {
                 <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
                   <span
                     className="lum-tile-icon lum-tile-icon--xs"
-                    style={{ backgroundColor: sfxEnabled ? '#1CB0F6' : '#64748B' }}
+                    style={{ backgroundColor: sfxEnabled ? '#8A9A8C' : '#5C6066' }}
                     aria-hidden="true"
                   >
                     {sfxEnabled ? (
@@ -485,7 +489,7 @@ export default function ProfileScreen() {
                 <span className="duo-row-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
                   <span
                     className="lum-tile-icon lum-tile-icon--xs"
-                    style={{ backgroundColor: isDark ? '#4F46E5' : '#FF7800' }}
+                    style={{ backgroundColor: isDark ? '#2F4A6D' : '#B5482F' }}
                     aria-hidden="true"
                   >
                     {isDark ? (
@@ -562,7 +566,7 @@ export default function ProfileScreen() {
                     const fallbackVal = typeof assessScores[d] === 'number' ? assessScores[d] * 10 : null;
                     const displayVal = liveVal ?? fallbackVal;
                     const barPct = typeof displayVal === 'number' ? Math.min(100, Math.round(displayVal / 10)) : 0;
-                    const col = DOMAIN_DISPLAY[d]?.color ?? '#0B63CE';
+                    const col = DOMAIN_DISPLAY[d]?.color ?? '#2F4A6D';
                     const DomainIcon = DOMAIN_DISPLAY[d].Icon;
                     return (
                       <div key={d} className="duo-cog-row">
@@ -593,7 +597,7 @@ export default function ProfileScreen() {
             <section className="lum-pro-insight-card">
               <div className="ed-pro-copy">
                 <div className="ed-pro-head">
-                  <Crown size={16} weight="fill" color="#FFB012" aria-hidden="true" />
+                  <Crown size={16} weight="fill" color="#F2EEE6" aria-hidden="true" />
                   <h3>
                     {isPro
                       ? isAr
@@ -603,7 +607,7 @@ export default function ProfileScreen() {
                         ? 'السجل التاريخي والمقارنة المعرفية · PRO'
                         : 'Historical Trends & Benchmarks · PRO'}
                   </h3>
-                  {isPro && <CheckCircle size={15} weight="fill" color="#1CB0F6" aria-hidden="true" />}
+                  {isPro && <CheckCircle size={15} weight="fill" color="#8A9A8C" aria-hidden="true" />}
                 </div>
                 <p>
                   {isPro

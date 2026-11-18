@@ -2,8 +2,7 @@ import React from 'react';
 import { assetUrl } from '../../lib/assetUrl';
 
 /**
- * NayzakLogo — Official NAYZAK GAMES Wordmark paired with Captain Nayzak mascot emblem.
- * Derived directly from the canonical Google Drive Snapchat/YouTube brand assets.
+ * NayzakLogo — Official NAYZAK MIND Light Clay Studio wordmark & sculpted emblem.
  */
 export default function NayzakLogo({
   variant = 'compact',
@@ -12,7 +11,7 @@ export default function NayzakLogo({
   className = '',
   style = {},
 }) {
-  const emblemSize = variant === 'full' ? 52 : variant === 'emblem' ? size : Math.max(34, size);
+  const emblemSize = variant === 'full' ? 52 : variant === 'emblem' ? size : Math.max(36, size);
 
   if (variant === 'emblem') {
     return (
@@ -21,32 +20,19 @@ export default function NayzakLogo({
         style={{ display: 'inline-flex', alignItems: 'center', ...style }}
       >
         <span
-          className="nayzak-brand-emblem"
-          style={{
-            width: emblemSize,
-            height: emblemSize,
-            borderRadius: Math.round(emblemSize * 0.3),
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}
+          className="nayzak-brand-emblem nayzak-clay-emblem"
+          style={{ width: emblemSize, height: emblemSize }}
         >
           <img
-            src={assetUrl('Assets/brand/cast-2026/nayzak-host.webp')}
-            alt="NAYZAK"
+            src={assetUrl('Assets/brand/clay-2026/brand-emblem.webp')}
+            alt="NAYZAK MIND"
             draggable="false"
-            style={{ width: '92%', height: '92%', objectFit: 'contain', display: 'block' }}
+            className="nayzak-clay-emblem-img"
           />
         </span>
       </div>
     );
   }
-
-  const wordmarkHeight =
-    variant === 'full'
-      ? Math.max(40, Math.round(size * 0.86))
-      : Math.max(26, Math.round(size * 0.78));
 
   return (
     <div
@@ -54,7 +40,7 @@ export default function NayzakLogo({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: variant === 'full' ? 10 : 7,
+        gap: variant === 'full' ? 12 : 9,
         userSelect: 'none',
         ...style,
       }}
@@ -62,45 +48,28 @@ export default function NayzakLogo({
     >
       {showMascot && (
         <span
-          className="nayzak-brand-emblem"
-          style={{
-            width: emblemSize,
-            height: emblemSize,
-            borderRadius: Math.round(emblemSize * 0.3),
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            overflow: 'hidden',
-          }}
+          className="nayzak-brand-emblem nayzak-clay-emblem"
+          style={{ width: emblemSize, height: emblemSize }}
           aria-hidden="true"
         >
           <img
-            src={assetUrl('Assets/brand/cast-2026/nayzak-host.webp')}
+            src={assetUrl('Assets/brand/clay-2026/brand-emblem.webp')}
             alt=""
             draggable="false"
-            style={{
-              width: '92%',
-              height: '92%',
-              objectFit: 'contain',
-              display: 'block',
-            }}
+            className="nayzak-clay-emblem-img"
           />
         </span>
       )}
 
-      <img
-        src={assetUrl('Assets/brand/nayzak-games-logo.png')}
-        alt="NAYZAK GAMES"
-        draggable="false"
-        className="nayzak-games-wordmark-img"
-        style={{
-          height: wordmarkHeight,
-          width: 'auto',
-          objectFit: 'contain',
-          display: 'block',
-        }}
-      />
+      <span className="nayzak-brand-wordmark">
+        <span
+          className="nayzak-brand-title"
+          style={variant === 'full' ? { fontSize: 22 } : undefined}
+        >
+          NAYZAK
+        </span>
+        <span className="nayzak-brand-sub">MIND · CLAY STUDIO</span>
+      </span>
     </div>
   );
 }

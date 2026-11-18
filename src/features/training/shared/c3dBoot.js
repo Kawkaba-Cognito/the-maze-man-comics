@@ -54,8 +54,8 @@ export function setScenePaused(wrapEl, value) {
    these three MUST stay in step with it and with --play-surface, or the 3D
    rooms render a different sky from the 2D boards). The fog stop is the mid
    stop, and must remain the darkest thing in the scene or distance hazes. */
-const TIDE_LIGHT_STOPS = ['#dfd7c7', '#d0c7b4', '#bfb5a0'];
-export const TIDE_FOG = 0xd0c7b4;
+const TIDE_LIGHT_STOPS = ['#F5F2EB', '#F2EEE6', '#EAE4D8'];
+export const TIDE_FOG = 0xF2EEE6;
 
 /*
  * ─── TIDE DEEP — the same sky, dark end ───
@@ -178,13 +178,24 @@ export function bootC3dScene(wrap, opts = {}) {
   wrap.appendChild(renderer.domElement);
 
   if (opts.lights !== false) {
-    scene.add(new THREE.AmbientLight(0xb8a88a, 0.62));
-    const key = new THREE.DirectionalLight(0xfff0d8, 1.1);
-    key.position.set(3, 5, 6);
-    scene.add(key);
-    const rim = new THREE.PointLight(ATT, 1.2, 30);
-    rim.position.set(-3, 2, 4);
-    scene.add(rim);
+    if (deep) {
+      scene.add(new THREE.AmbientLight(0xb8a88a, 0.62));
+      const key = new THREE.DirectionalLight(0xfff0d8, 1.1);
+      key.position.set(3, 5, 6);
+      scene.add(key);
+      const rim = new THREE.PointLight(ATT, 1.2, 30);
+      rim.position.set(-3, 2, 4);
+      scene.add(rim);
+    } else {
+      // Soft diffused overhead Light Clay Studio rig
+      scene.add(new THREE.HemisphereLight(0xfaf8f4, 0xd8d0c2, 0.85));
+      const key = new THREE.DirectionalLight(0xfffaf2, 1.05);
+      key.position.set(3, 7, 6);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xe6ecf2, 0.35);
+      fill.position.set(-4, 2, 4);
+      scene.add(fill);
+    }
   }
 
   let starGeo = null;
@@ -367,8 +378,8 @@ export function matStd(hex, opts = {}) {
     color: hex,
     emissive: new THREE.Color(opts.emissive ?? hex),
     emissiveIntensity: opts.emissiveIntensity ?? 0,
-    metalness: opts.metalness ?? 0.4,
-    roughness: opts.roughness ?? 0.4,
+    metalness: opts.metalness ?? 0.04,
+    roughness: opts.roughness ?? 0.86,
     transparent: opts.transparent ?? false,
     opacity: opts.opacity ?? 1,
   });

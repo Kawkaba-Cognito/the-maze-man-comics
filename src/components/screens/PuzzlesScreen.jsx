@@ -39,39 +39,27 @@ const VoidRunnerLazy = lazyWithRetry(
 
 const CATEGORY_META = {
   numbers: {
-    color: '#0B63CE',
-    softBg: '#EFF6FF',
-    art: 'Assets/puzzle-studio/category-art-2026/numbers.webp',
-    buddyImg: 'Assets/brand/cast-2026/dalfin-wise.webp',
-    buddyEn: 'Dalfin',
-    buddyAr: 'دلفين',
+    color: '#2E5EA8',
+    softBg: '#EBF1FA',
+    art: 'Assets/brand/clay-2026/puzzle-numbers.webp',
     Icon: Hash,
   },
   logic: {
-    color: '#4F46E5',
-    softBg: '#EEF2FF',
-    art: 'Assets/puzzle-studio/category-art-2026/logic.webp',
-    buddyImg: 'Assets/brand/cast-2026/nayzak-think.webp',
-    buddyEn: 'Nayzak',
-    buddyAr: 'نيزك',
+    color: '#4D8F68',
+    softBg: '#EAF4EE',
+    art: 'Assets/brand/clay-2026/puzzle-logic.webp',
     Icon: PuzzlePiece,
   },
   spatial: {
-    color: '#0D9488',
-    softBg: '#F0FDFA',
-    art: 'Assets/puzzle-studio/category-art-2026/spatial.webp',
-    buddyImg: 'Assets/brand/cast-2026/abuasnan-boy.webp',
-    buddyEn: 'Abu Asnan',
-    buddyAr: 'أبو أسنان',
+    color: '#D9911E',
+    softBg: '#FDF3DF',
+    art: 'Assets/brand/clay-2026/puzzle-spatial.webp',
     Icon: Cube,
   },
   group: {
-    color: '#FF7800',
-    softBg: '#FFF4E5',
-    art: 'Assets/puzzle-studio/category-art-2026/group.webp',
-    buddyImg: 'Assets/brand/cast-2026/shofata-cheer.webp',
-    buddyEn: 'Shofata',
-    buddyAr: 'شوفاتة',
+    color: '#D95A3D',
+    softBg: '#FCEBE7',
+    art: 'Assets/brand/clay-2026/puzzle-group.webp',
     Icon: UsersThree,
   },
 };
@@ -108,15 +96,15 @@ function GameLoading({ isAr }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#F8F6F1',
-        color: '#0F1E33',
-        fontFamily: "'Cairo', 'Outfit', system-ui, sans-serif",
+        background: '#F2EEE6',
+        color: '#1B1F24',
+        fontFamily: "'Inter', 'Cairo', system-ui, sans-serif",
         fontSize: 17,
-        fontWeight: 800,
+        fontWeight: 700,
         gap: 10,
       }}
     >
-      <PuzzlePiece size={34} weight="duotone" color="#0B63CE" aria-hidden="true" />
+      <PuzzlePiece size={34} weight="duotone" color="#2F4A6D" aria-hidden="true" />
       <span>{isAr ? 'جارِ التحميل…' : 'Loading…'}</span>
     </div>
   );
@@ -167,7 +155,7 @@ export default function PuzzlesScreen() {
     return (
       <div
         className={`pz-studio-game pz-theme-${activePuzzle?.category || 'logic'}`}
-        style={{ '--pz-puzzle-accent': activePuzzle?.accent || '#2586F7' }}
+        style={{ '--pz-puzzle-accent': activePuzzle?.accent || '#2F4A6D' }}
         dir={isAr ? 'rtl' : 'ltr'}
       >
         <Suspense fallback={<GameLoading isAr={isAr} />}>
@@ -299,7 +287,7 @@ export default function PuzzlesScreen() {
           >
             <div className="nayzak-spotlight-char" aria-hidden="true">
               <img
-                src={assetUrl('Assets/brand/cast-2026/dalfin-wise.webp')}
+                src={assetUrl('Assets/brand/clay-2026/puzzle-spatial.webp')}
                 alt=""
                 draggable="false"
               />
@@ -307,15 +295,15 @@ export default function PuzzlesScreen() {
 
             <div className="nayzak-spotlight-body">
               <span className="nayzak-comic-ribbon nayzak-comic-ribbon--sm">
-                {isAr ? 'تحدّي الجد دلفين' : "DALFIN'S FEATURED"}
+                {isAr ? 'طيران ثلاثي الأبعاد' : '3D CLAY FLIGHT'}
               </span>
               <h2 className="nayzak-spotlight-title">
-                {isAr ? 'عدّاء الفراغ · Void Runner' : 'Void Runner'}
+                {isAr ? 'طائرة الصلصال · Clay Plane' : 'Clay Plane'}
               </h2>
               <p className="nayzak-spotlight-sub">
                 {isAr
-                  ? '«أسرع مما تظن! اختبر ردة فعلك وتفادَ العقبات الفضائية»'
-                  : '“Think your reflexes beat mine? Dodge every obstacle!”'}
+                  ? 'حلّق عبر الأخاديد واجمع العملات الذهبية'
+                  : 'Glide your 3D clay biplane through sunlit canyons & coins.'}
               </p>
             </div>
 
@@ -361,16 +349,6 @@ export default function PuzzlesScreen() {
                     draggable="false"
                     className="lum-card-stage-img"
                   />
-                  {meta.buddyImg && (
-                    <span className="nayzak-stage-guardian">
-                      <img
-                        src={assetUrl(meta.buddyImg)}
-                        alt={isAr ? meta.buddyAr : meta.buddyEn}
-                        draggable="false"
-                      />
-                      <span>{isAr ? meta.buddyAr : meta.buddyEn}</span>
-                    </span>
-                  )}
                   <span className="lum-count-pill lum-stage-pill">
                     {isAr ? `${count} ألغاز` : `${count} puzzles`}
                   </span>
@@ -388,11 +366,14 @@ export default function PuzzlesScreen() {
 
                   <div className="lum-domain-card-foot">
                     <span className="lum-domain-prog-lbl">
-                      {isAr ? 'تحديات ذهنية' : 'Mind Studio'}
+                      {isAr ? 'بدون مؤقت · أوضاع متعددة' : 'Untimed · Multiple grids'}
                     </span>
-                    <span className="lum-domain-cta" style={{ color: meta.color }}>
-                      <span>{isAr ? 'استكشف' : 'Explore'}</span>
-                      <NavArrow size={14} weight="bold" aria-hidden="true" />
+                    <span
+                      className="clay-card-pill-btn"
+                      style={{ backgroundColor: meta.color }}
+                    >
+                      <span>{isAr ? 'العب الآن' : 'Play'}</span>
+                      <NavArrow size={13} weight="bold" aria-hidden="true" />
                     </span>
                   </div>
                 </div>

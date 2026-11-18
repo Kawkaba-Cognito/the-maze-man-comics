@@ -1,6 +1,6 @@
 {
   "rules": {
-    "raw-colour": 690,
+    "raw-colour": 687,
     "stacked-backdrops": 2,
     "conditional-background": 1
   },
@@ -13,9 +13,6 @@
     },
     "src/features/training/domains/attention/games/mot/DuolingoMot.jsx": {
       "raw-colour": 74
-    },
-    "src/features/training/domains/attention/games/mot/MotBoard2D.jsx": {
-      "raw-colour": 1
     },
     "src/features/training/domains/attention/games/train-switch/CarPark3DProto.jsx": {
       "raw-colour": 19
@@ -119,9 +116,6 @@
     },
     "src/features/training/domains/speed/games/math-gates/index.jsx": {
       "raw-colour": 8
-    },
-    "src/features/training/domains/speed/games/math-gates/MathGatesBoard2D.jsx": {
-      "raw-colour": 2
     },
     "src/features/training/domains/speed/games/speed-match/DuolingoSpeedMatch.jsx": {
       "raw-colour": 6

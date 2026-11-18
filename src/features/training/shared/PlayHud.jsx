@@ -202,7 +202,7 @@ export default function PlayHud({
           */}
           {stats
             ? stats.filter(Boolean).map((s, i) => (
-              <div className="ct-fq-gs" key={s.label ?? i}>
+              <div className="ct-fq-gs" key={s.label ? `${s.label}-${i}` : i}>
                 <div className={`ct-fq-gv${s.tone ? ` ${s.tone}` : ''}${s.small ? ' sm' : ''}`}>
                   {s.value}
                 </div>

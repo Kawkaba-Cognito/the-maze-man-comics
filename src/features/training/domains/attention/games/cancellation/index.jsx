@@ -218,10 +218,9 @@ const PREMIUM_TRAINING_MODES = new Set(['free', 'level', 'challenge']);
  *    automatically. This is what keeps the hard tiers playable, where six of the
  *    near-identical silhouettes all became planets.
  */
-function usesPremiumTrainingArt(round, cells) {
-  if (!PREMIUM_TRAINING_MODES.has(round?.mode)) return false;
-  if (!Array.isArray(cells) || !cells.length) return false;
-  return shapesAreArtSafe(new Set(cells.map((cell) => cell.shape)));
+function usesPremiumTrainingArt() {
+  /* Light Clay Studio uses tactile geometric polymer clay tokens rather than space sprites. */
+  return false;
 }
 
 /** One shape, drawn the way the board draws it — art when the round uses art. */

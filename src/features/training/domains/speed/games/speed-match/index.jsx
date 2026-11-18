@@ -759,14 +759,14 @@ export function SpeedMatchEngine({
         labels={{ paused: t.paused, resume: t.resume, restart: t.restart, quitMenu: t.quitMenu }}
         showRestart={false}
         onResume={onResume}
-        onQuit={confirmQuit}
+        onQuitMenu={confirmQuit}
       />
 
       <TrainingQuitModal
         open={quitOpen}
-        labels={{ quitTitle: t.quitTitle, quitMessage: t.quitMessage, stay: t.stay, quitConfirm: t.quitConfirm }}
-        onCancel={() => setQuitOpen(false)}
-        onConfirm={confirmQuit}
+        labels={{ quitQ: t.quitQ, quitLose: t.quitLose, yesQuit: t.yesQuit, keep: t.keep }}
+        onKeepPlaying={() => setQuitOpen(false)}
+        onConfirmQuit={confirmQuit}
       />
     </div>
   );

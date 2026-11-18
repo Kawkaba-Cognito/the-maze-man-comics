@@ -35,19 +35,19 @@ export default function KawkabSprite({
 }) {
   return (
     <img
-      className={`kawkab-sprite${className ? ` ${className}` : ''}`}
-      src={assetUrl('Assets/characters/kawkab/kawkab-planet.webp')}
+      className={`kawkab-sprite clay-emblem-sprite${className ? ` ${className}` : ''}`}
+      src={assetUrl('Assets/brand/clay-2026/brand-emblem.webp')}
       alt={alt}
       aria-hidden={ariaHidden || !alt ? 'true' : undefined}
       draggable={false}
       style={{
         width: size,
-        height: 'auto',
-        /* Never let a parent's flexbox squash him. The art is taller than it is
-           wide, and several callers drop this into a row where `align-items:
-           stretch` would distort it. */
+        height: size,
         flexShrink: 0,
-        objectFit: 'contain',
+        objectFit: 'cover',
+        borderRadius: '50%',
+        border: '1.5px solid rgba(27, 31, 36, 0.1)',
+        boxShadow: '0 4px 12px rgba(27, 31, 36, 0.1)',
         userSelect: 'none',
         ...style,
       }}

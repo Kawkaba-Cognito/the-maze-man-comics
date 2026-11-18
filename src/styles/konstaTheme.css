@@ -5,32 +5,32 @@
 
 @custom-variant dark (&:where(.dark, .dark *, [data-home-theme='dark'], [data-home-theme='dark'] *));
 
-/* NAYZAK GAMES Brand Overrides for Konsta UI (MIT Commercial License) */
+/* NAYZAK MIND — Light Clay Studio Overrides for Konsta UI */
 @theme {
-  --color-brand-primary: #0b63ce;
-  --color-ios-light-surface: #f8f6f1;
-  --color-ios-light-surface-1: #ffffff;
-  --color-ios-dark-surface: #0b1526;
-  --color-ios-dark-surface-1: #12233b;
-  --color-ios-dark-surface-2: #0f1e33;
+  --color-brand-primary: #2F4A6D;
+  --color-ios-light-surface: #F2EEE6;
+  --color-ios-light-surface-1: #FAF8F4;
+  --color-ios-dark-surface: #14181E;
+  --color-ios-dark-surface-1: #1D232B;
+  --color-ios-dark-surface-2: #181D24;
 }
 
 :root {
-  --k-color-primary: #0b63ce;
-  --k-color-ios-primary: #0b63ce;
-  --k-color-ios-primary-tint: #1cb0f6;
-  --k-color-ios-primary-shade: #084da3;
+  --k-color-primary: #2F4A6D;
+  --k-color-ios-primary: #2F4A6D;
+  --k-color-ios-primary-tint: #456792;
+  --k-color-ios-primary-shade: #233854;
 }
 
 .k-ios {
-  font-family: 'Outfit', 'Cairo', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Cairo', system-ui, -apple-system, sans-serif;
 }
 
-/* Prevent Konsta .dark body class from overriding Nayzak Deep Navy */
+/* Prevent Konsta .dark body class from overriding Nayzak Slate Studio */
 .dark,
 html[data-home-theme='dark'] .k-ios {
-  background-color: #0b1526;
-  color: #f8fafc;
+  background-color: #14181E;
+  color: #F2EEE6;
 }
 
 @layer base {
@@ -63,33 +63,33 @@ html[data-home-theme='dark'] .k-ios {
 }
 
 .k-ios .k-segmented {
-  background: rgba(15, 30, 51, 0.07);
+  background: rgba(27, 31, 36, 0.06);
   padding: 3px;
 }
 
 .dark .k-ios .k-segmented,
 html[data-home-theme='dark'] .k-ios .k-segmented {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(242, 238, 230, 0.1);
 }
 
 .k-ios .k-segmented .nayzak-seg-btn {
-  color: #334155 !important;
-  font-weight: 700;
+  color: #5C6066 !important;
+  font-weight: 600;
 }
 
 .k-ios .k-segmented .nayzak-seg-btn.is-active {
-  color: #0f1e33 !important;
-  font-weight: 800;
+  color: #1B1F24 !important;
+  font-weight: 700;
 }
 
 .dark .k-ios .k-segmented .nayzak-seg-btn,
 html[data-home-theme='dark'] .k-ios .k-segmented .nayzak-seg-btn {
-  color: #e2e8f0 !important;
+  color: #C7C1B5 !important;
 }
 
 .dark .k-ios .k-segmented .nayzak-seg-btn.is-active,
 html[data-home-theme='dark'] .k-ios .k-segmented .nayzak-seg-btn.is-active {
-  color: #0f1e33 !important;
+  color: #1B1F24 !important;
 }
 
 /* Clean Konsta List / ListItem resets since Tailwind Preflight is disabled */
@@ -106,24 +106,24 @@ html[data-home-theme='dark'] .k-ios .k-segmented .nayzak-seg-btn.is-active {
   margin-bottom: 14px;
 }
 
-/* Brand Orange Primary Konsta Button */
+/* Light Clay Deep Navy Primary Konsta Button */
 .k-ios .nayzak-konsta-cta {
-  --k-color-primary: #ff7800;
-  --k-color-ios-primary: #ff7800;
-  --k-color-ios-primary-shade: #d96200;
-  background: linear-gradient(135deg, #ff8a1f 0%, #ff7800 100%) !important;
-  color: #ffffff !important;
+  --k-color-primary: #2F4A6D;
+  --k-color-ios-primary: #2F4A6D;
+  --k-color-ios-primary-shade: #233854;
+  background: #2F4A6D !important;
+  color: #F2EEE6 !important;
   border: 0 !important;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 6px 16px rgba(255, 120, 0, 0.28);
+  box-shadow: 0 4px 12px rgba(47, 74, 109, 0.22);
 }
 
 .k-ios .nayzak-konsta-cta:hover {
-  background: linear-gradient(135deg, #ff9633 0%, #f06c00 100%) !important;
+  background: #385880 !important;
 }
 
 .k-ios .nayzak-konsta-cta:active {
-  background: #d96200 !important;
-  box-shadow: 0 2px 8px rgba(255, 120, 0, 0.22);
+  background: #233854 !important;
+  box-shadow: 0 2px 6px rgba(47, 74, 109, 0.18);
 }

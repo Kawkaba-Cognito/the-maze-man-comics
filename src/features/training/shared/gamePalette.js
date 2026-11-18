@@ -85,38 +85,41 @@
  * DOM games and canvas games render different boards.
  */
 export const GAME_SKY = Object.freeze({
-  top: '#faf7f2',
-  mid: '#f5f0e6',
-  low: '#efe9dc',
-  bot: '#efe9dc',
+  top: '#F5F2EB',
+  mid: '#F2EEE6',
+  low: '#EAE4D8',
+  bot: '#EAE4D8',
+  clayTop: '#FCFBF8',
+  clayLow: '#EFE9DD',
+  claySurface: '#FAF8F4',
   /** For a DOM background. */
-  gradient: 'linear-gradient(180deg, #faf7f2 0%, #f5f0e6 55%, #efe9dc 100%)',
+  gradient: 'linear-gradient(180deg, #F5F2EB 0%, #F2EEE6 55%, #EAE4D8 100%)',
   /** Single-colour fallback (canvas clear, Three.js clear colour). */
-  flat: '#faf7f2',
+  flat: '#F2EEE6',
 });
 
 /** Body text and the outline for light pieces. */
-export const GAME_INK = '#1e293b';
+export const GAME_INK = '#1B1F24';
 
 /**
- * The six playfield roles (Duolingo high-contrast palette).
+ * The six playfield roles (Light Clay Studio palette).
  *   fill   — the shape's body
  *   edge   — its shaded side / lower edge; gives a flat shape form without faking 3D
  *   stroke — what to outline with so the silhouette reads against the sky
  */
 export const GAME_COLORS = Object.freeze({
-  /** Default piece. Anything not currently saying anything about itself. */
-  item: Object.freeze({ fill: '#2586f7', edge: '#106ad6', stroke: '#106ad6' }),
-  /** Cued / target / "look at me". The hot state. */
-  accent: Object.freeze({ fill: '#ff7800', edge: '#cc5a00', stroke: GAME_INK }),
-  /** Correct, solved, earned. */
-  ok: Object.freeze({ fill: '#58cc02', edge: '#46a302', stroke: '#46a302' }),
-  /** Wrong, missed, lost. */
-  bad: Object.freeze({ fill: '#ff4b4b', edge: '#ea2b2b', stroke: '#ea2b2b' }),
-  /** The player's current pick, mid-decision. */
-  selected: Object.freeze({ fill: '#ddf4ff', edge: '#2586f7', stroke: GAME_INK }),
-  /** Spent, disabled, out of play — present but not competing for attention. */
-  muted: Object.freeze({ fill: '#94a3b8', edge: '#64748b', stroke: '#64748b' }),
+  /** Default piece. Vibrant Cobalt Blue polymer clay. */
+  item: Object.freeze({ fill: '#2E5EA8', edge: '#1D4178', stroke: '#1D4178' }),
+  /** Cued / target / "look at me". Terracotta Coral polymer clay. */
+  accent: Object.freeze({ fill: '#D95A3D', edge: '#A13A23', stroke: GAME_INK }),
+  /** Correct, solved, earned. Fresh Sage Emerald polymer clay. */
+  ok: Object.freeze({ fill: '#4D8F68', edge: '#346849', stroke: '#346849' }),
+  /** Wrong, missed, lost. Crimson Terracotta clay. */
+  bad: Object.freeze({ fill: '#C83E2B', edge: '#912617', stroke: '#912617' }),
+  /** The player's current pick, mid-decision. Ochre Gold clay. */
+  selected: Object.freeze({ fill: '#F7DF9C', edge: '#C68414', stroke: GAME_INK }),
+  /** Spent, disabled, out of play — Warm Stone clay. */
+  muted: Object.freeze({ fill: '#A8A092', edge: '#7F786C', stroke: '#7F786C' }),
 });
 
 /*
@@ -143,10 +146,10 @@ export const GAME_COLORS = Object.freeze({
  * than the furniture around it.
  */
 export const GAME_STIMULUS = Object.freeze([
-  '#1cb0f6', // Duolingo Sky Blue
-  '#ff9600', // Duolingo Orange
-  '#58cc02', // Duolingo Feather Green
-  '#ce82ff', // Duolingo Berry Purple
+  '#2E5EA8', // Cobalt Blue Clay
+  '#D95A3D', // Terracotta Coral Clay
+  '#4D8F68', // Fresh Sage Clay
+  '#E3A12B', // Ochre Gold Clay
 ]);
 
 /**
@@ -156,8 +159,8 @@ export const GAME_STIMULUS = Object.freeze([
  */
 export const GAME_STIMULUS_6 = Object.freeze([
   ...GAME_STIMULUS,
-  '#2586f7', // Duolingo Royal Blue
-  '#ff4b4b', // Duolingo Cardinal Red
+  '#7D5BA6', // Plum Lavender Clay
+  '#2F949C', // Lagoon Teal Clay
 ]);
 
 /*
@@ -187,7 +190,13 @@ export const GAME_FX = {
   /** A 1px separating line that must not read as a border. */
   hairline: 'rgba(19, 30, 40, 0.12)',
   /** The lit top edge of a raised surface. */
-  glint: 'rgba(255, 255, 255, 0.55)',
+  glint: 'rgba(255, 255, 255, 0.90)',
+  /** Subtle inlaid clay guide ring. */
+  clayRing: 'rgba(46, 94, 168, 0.12)',
+  /** 3D polymer clay dome lighting stops. */
+  domeTop: 'rgba(255, 255, 255, 0.38)',
+  domeFade: 'rgba(255, 255, 255, 0)',
+  domeEdge: 'rgba(0, 0, 0, 0.12)',
 };
 
 /** '#2f5f86' → 0x2f5f86, for Three.js colour arguments. */

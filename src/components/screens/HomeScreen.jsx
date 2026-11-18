@@ -6,8 +6,6 @@ import {
   Flame,
   SlidersHorizontal,
   CaretDown,
-  CaretRight,
-  CaretLeft,
   Crosshair,
   Target,
   RocketLaunch,
@@ -34,6 +32,7 @@ import {
 } from '@phosphor-icons/react';
 import { useApp } from '../../context/AppContext';
 import NayzakHeader from '../shared/NayzakHeader';
+import ClayHero3D from '../shared/ClayHero3D';
 import DomainGameStage from '../../features/training/shared/DomainGameStage';
 import { getLazyGame } from '../../features/training/lazyGames';
 import { EXPERIMENTS } from '../training/trainingExperimentsData';
@@ -47,8 +46,6 @@ import {
   consumeJustCompleted,
 } from '../../features/workout/workoutState';
 import { todayKey } from '../../features/workout/workoutPlan';
-import { getDomainGuardian } from '../../data/nayzakCast';
-import { assetUrl } from '../../lib/assetUrl';
 
 const WORKOUT_COMPLETE_BONUS = 50;
 
@@ -79,8 +76,8 @@ const DOMAINS_META = {
     en: 'Attention',
     ar: 'الانتباه',
     Icon: Crosshair,
-    color: '#FF7800',
-    softBg: '#FFF4E5',
+    color: '#D95A3D',
+    softBg: '#FCEBE7',
     descEn: 'Selective focus & visual scanning',
     descAr: 'البحث البصري والتركيز الانتقائي',
   },
@@ -89,8 +86,8 @@ const DOMAINS_META = {
     en: 'Speed',
     ar: 'السرعة',
     Icon: Lightning,
-    color: '#0B63CE',
-    softBg: '#EFF6FF',
+    color: '#D9911E',
+    softBg: '#FDF3DF',
     descEn: 'Rapid processing & reaction timing',
     descAr: 'سرعة المعالجة وزمن الاستجابة',
   },
@@ -99,8 +96,8 @@ const DOMAINS_META = {
     en: 'Memory',
     ar: 'الذاكرة',
     Icon: Brain,
-    color: '#1CB0F6',
-    softBg: '#F0F9FF',
+    color: '#2E5EA8',
+    softBg: '#EBF1FA',
     descEn: 'Working memory & spatial recall',
     descAr: 'الذاكرة العاملة والاسترجاع المكاني',
   },
@@ -109,8 +106,8 @@ const DOMAINS_META = {
     en: 'Language',
     ar: 'اللغة',
     Icon: ChatCircleText,
-    color: '#0D9488',
-    softBg: '#F0FDFA',
+    color: '#4D8F68',
+    softBg: '#EAF4EE',
     descEn: 'Word fluency & semantic links',
     descAr: 'الطلاقة اللغوية والروابط الدلالية',
   },
@@ -119,8 +116,8 @@ const DOMAINS_META = {
     en: 'Reasoning',
     ar: 'الاستدلال',
     Icon: PuzzlePiece,
-    color: '#4F46E5',
-    softBg: '#EEF2FF',
+    color: '#5B629E',
+    softBg: '#EEEFF8',
     descEn: 'Rule induction & deductive logic',
     descAr: 'استنتاج القواعد والتحليل المنطقي',
   },
@@ -129,8 +126,8 @@ const DOMAINS_META = {
     en: 'Flexibility',
     ar: 'المرونة',
     Icon: ArrowsClockwise,
-    color: '#DF4E32',
-    softBg: '#FFF1EE',
+    color: '#8C5A7E',
+    softBg: '#F4ECF2',
     descEn: 'Task switching & mental agility',
     descAr: 'تبديل المهام والمرونة الذهنية',
   },
@@ -209,15 +206,15 @@ function GameLoading({ isAr }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#F8F6F1',
-        color: '#0F1E33',
-        fontFamily: "'Cairo', 'Outfit', system-ui, sans-serif",
+        background: '#F2EEE6',
+        color: '#1B1F24',
+        fontFamily: "'Inter', 'Cairo', system-ui, sans-serif",
         fontSize: 17,
         fontWeight: 700,
         gap: 10,
       }}
     >
-      <RocketLaunch size={34} weight="duotone" color="#FF7800" aria-hidden="true" />
+      <RocketLaunch size={34} weight="duotone" color="#2F4A6D" aria-hidden="true" />
       <span>{isAr ? 'جارِ التحميل…' : 'Loading…'}</span>
     </div>
   );
@@ -238,22 +235,11 @@ export default function HomeScreen() {
   const [activeWorkoutIdx, setActiveWorkoutIdx] = useState(null);
   const [workoutSt, setWorkoutSt] = useState(() => initWorkoutState());
   const [showGoalPicker, setShowGoalPicker] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(() => {
-    try {
-      return localStorage.getItem('nayzak_welcome_seen_v1') !== '1';
-    } catch {
-      return true;
-    }
-  });
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const dismissWelcome = useCallback(() => {
     playSfx?.('tap');
     setShowWelcome(false);
-    try {
-      localStorage.setItem('nayzak_welcome_seen_v1', '1');
-    } catch {
-      /* ignore */
-    }
   }, [playSfx]);
 
   const GameView = activeGameKey ? getLazyGame(activeGameKey) : null;
@@ -330,16 +316,11 @@ export default function HomeScreen() {
       ? [...ratedDomains].sort((a, b) => a.rating - b.rating)[0].id
       : 'attention';
   const recMeta = DOMAINS_META[recommendedDomainId];
-  const recGuardian = getDomainGuardian(recommendedDomainId);
   const recRating = domainRating(recommendedDomainId);
   const recBand = recRating != null ? ratingBand(recRating) : null;
   const recGames = TRAINING_GAMES.filter((g) => g.domainId === recommendedDomainId);
   const starterGame = recGames[0] || TRAINING_GAMES[0];
   const RecIcon = recMeta.Icon;
-  const RowChevron = isAr ? CaretLeft : CaretRight;
-  const hostSpriteUrl = wkAllDone
-    ? assetUrl('Assets/brand/cast-2026/nayzak-epiphany.webp')
-    : assetUrl('Assets/brand/cast-2026/nayzak-host.webp');
 
   const nextExercise = wkExercises[nextIdx >= 0 ? nextIdx : 0];
   const nextExp = nextExercise ? GAMES_BY_KEY[nextExercise.gameKey] : null;
@@ -350,11 +331,11 @@ export default function HomeScreen() {
     : nextExercise?.gameName || '';
   const heroTitle = wkAllDone
     ? isAr
-      ? 'أحسنت! أنهيت ألعاب اليوم'
-      : 'All 3 Games Complete!'
+      ? 'اكتملت الجلسة'
+      : 'Session Complete'
     : currentGoal.id === 'overall'
     ? isAr
-      ? 'تحدّي اليوم: ٣ ألعاب سريعة'
+      ? 'ثلاث جولات اليوم'
       : "Today's 3-Game Mix"
     : isAr
     ? currentGoal.ar
@@ -382,7 +363,7 @@ export default function HomeScreen() {
                     setShowWelcome(true);
                   }}
                 >
-                  <Sparkle size={12} weight="fill" color="#FF7800" aria-hidden="true" />
+                  <Sparkle size={12} weight="fill" color="#2F4A6D" aria-hidden="true" />
                   <span>{isAr ? 'كيف يعمل؟' : 'How it works'}</span>
                 </button>
               )}
@@ -391,7 +372,7 @@ export default function HomeScreen() {
 
           <div className="lum-rhythm-group">
             <span className="lum-streak-chip">
-              <Flame size={14} weight="fill" color="#FF7800" aria-hidden="true" />
+              <Flame size={14} weight="fill" color="#B5482F" aria-hidden="true" />
               <span>
                 {workoutSt?.streak || 0} {isAr ? 'يوم متتالي' : 'day streak'}
               </span>
@@ -422,7 +403,7 @@ export default function HomeScreen() {
           <section className="nayzak-welcome-card" aria-label={isAr ? 'دليل البداية السريع' : 'Quick start guide'}>
             <div className="nayzak-welcome-top">
               <h2 className="nayzak-welcome-title">
-                <Sparkle size={15} weight="fill" color="#FF7800" aria-hidden="true" />
+                <Sparkle size={15} weight="fill" color="#2F4A6D" aria-hidden="true" />
                 <span>
                   {isAr ? 'أهلاً بك! هكذا يعمل التطبيق في ٣ خطوات:' : 'New here? How Nayzak Games works:'}
                 </span>
@@ -455,19 +436,14 @@ export default function HomeScreen() {
           </section>
         )}
 
-        {/* 1. Official NAYZAK Show Host Daily Workout Stage */}
+        {/* 1. Light Clay Studio Daily Session Stage (Interactive 3D Diorama + Gamified Rounds) */}
         <section
-          className="lum-hero-card lum-hero-card--nayzak"
+          className="lum-hero-card lum-hero-card--nayzak clay-hero-studio"
           aria-label={isAr ? 'تمرين اليوم' : 'Daily Workout'}
         >
-          <div className="nayzak-hero-stage">
-            <div className="nayzak-hero-host-box" aria-hidden="true">
-              <img
-                src={hostSpriteUrl}
-                alt=""
-                draggable="false"
-                className="nayzak-hero-host-img"
-              />
+          <div className="nayzak-hero-stage clay-hero-stage">
+            <div className="nayzak-hero-host-box clay-hero-diorama">
+              <ClayHero3D doneCount={wkDoneCount} playSfx={playSfx} />
             </div>
 
             <div className="nayzak-hero-stage-copy">
@@ -475,11 +451,11 @@ export default function HomeScreen() {
                 <span className="nayzak-comic-ribbon">
                   {wkAllDone
                     ? isAr
-                      ? 'بطل اليوم!'
-                      : 'TODAY CLEARED!'
+                      ? 'اكتملت الجلسة ★'
+                      : 'SESSION COMPLETE ★'
                     : isAr
-                    ? 'تحدّي نيزك اليومي'
-                    : "NAYZAK'S CHALLENGE"}
+                    ? `جولات اليوم · ${wkDoneCount}/${wkTotal}`
+                    : `DAILY QUEST · ${wkDoneCount}/${wkTotal}`}
                 </span>
 
                 <button
@@ -492,22 +468,30 @@ export default function HomeScreen() {
                   aria-expanded={showGoalPicker}
                 >
                   <SlidersHorizontal size={14} weight="bold" aria-hidden="true" />
-                  <span>{isAr ? 'تغيير التركيز' : 'Goal'}</span>
+                  <span>{isAr ? 'التركيز' : 'Focus'}</span>
                   <CaretDown size={12} weight="bold" aria-hidden="true" />
                 </button>
               </div>
 
               <h2 className="lum-hero-title">{heroTitle}</h2>
 
-              <p className="nayzak-hero-speech">
-                {wkAllDone
-                  ? isAr
-                    ? 'نيزك: «أبدعت اليوم! أنهيت ألعابك الثلاث، عُد غداً لجولة جديدة.»'
-                    : 'Nayzak: “Bullseye! All 3 rounds beaten — come back tomorrow!”'
-                  : isAr
-                  ? `العب أي جولة بالأسفل أو اضغط «ابدأ» (${wkDoneCount}/${wkTotal} مكتملة)`
-                  : `Tap any game below or press Start (${wkDoneCount} of ${wkTotal} done · ~2 min each)`}
-              </p>
+              <div className="clay-quest-pips" aria-hidden="true">
+                {wkExercises.map((ex, idx) => {
+                  const done = Boolean(wkDone[idx]);
+                  const next = idx === nextIdx;
+                  const dom = DOMAINS_META[ex.domainId] || DOMAINS_META.attention;
+                  return (
+                    <span
+                      key={idx}
+                      className={`clay-quest-pip${done ? ' is-done' : ''}${next ? ' is-next' : ''}`}
+                      style={{ '--pip-color': dom.color }}
+                    >
+                      {done ? <Check size={12} weight="bold" /> : idx + 1}
+                    </span>
+                  );
+                })}
+                <span className="clay-quest-bonus-chip">+50 XP</span>
+              </div>
             </div>
           </div>
 
@@ -546,13 +530,6 @@ export default function HomeScreen() {
                   ? exp.titleAr
                   : exp.titleEn
                 : ex.gameName;
-              const desc = exp
-                ? isAr && exp.descAr
-                  ? exp.descAr
-                  : exp.descEn
-                : isAr
-                ? dom.descAr
-                : dom.descEn;
               const launchExercise = () =>
                 handleLaunchGame(
                   exp || { gameKey: ex.gameKey, domainId: ex.domainId },
@@ -578,25 +555,33 @@ export default function HomeScreen() {
                     </span>
 
                     <span className="lum-row-copy">
-                      <span className="lum-row-domain" style={{ color: dom.color }}>
-                        {isAr ? dom.ar : dom.en}
+                      <span className="clay-row-meta">
+                        <span
+                          className="clay-dom-badge"
+                          style={{ backgroundColor: dom.softBg, color: dom.color }}
+                        >
+                          {isAr ? dom.ar : dom.en}
+                        </span>
+                        <span className="clay-dur-chip">{isAr ? '٢ د' : '2 min'}</span>
                       </span>
                       <span className="lum-row-title">{title}</span>
-                      {desc && <span className="nayzak-row-sub">{desc}</span>}
                     </span>
 
                     <span className="lum-row-trailing">
                       {isDone ? (
                         <span className="lum-step-done">
                           <Check size={12} weight="bold" aria-hidden="true" />
-                          <span>{isAr ? 'تم' : 'Done'}</span>
+                          <span>{isAr ? 'مكتمل' : 'Done'}</span>
                         </span>
                       ) : (
-                        <span className={`lum-step-num${isUpNext ? ' is-next' : ''}`}>
-                          {idx + 1}
+                        <span
+                          className={`clay-drill-cta${isUpNext ? ' is-next' : ''}`}
+                          style={isUpNext ? { backgroundColor: dom.color } : undefined}
+                        >
+                          <Play size={11} weight="fill" aria-hidden="true" />
+                          <span>{isAr ? 'العب' : 'Play'}</span>
                         </span>
                       )}
-                      <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
                     </span>
                   </button>
                 </li>
@@ -667,15 +652,6 @@ export default function HomeScreen() {
                 >
                   <RecIcon size={21} weight="fill" color="#FFFFFF" />
                 </span>
-                {recGuardian && (
-                  <span className="nayzak-mini-guardian">
-                    <img
-                      src={recGuardian.avatarUrl}
-                      alt={isAr ? recGuardian.nameAr : recGuardian.nameEn}
-                      draggable="false"
-                    />
-                  </span>
-                )}
               </div>
               <span className="lum-module-badge">
                 {isAr ? 'تدريب سريع (دقيقتان)' : 'QUICK PRACTICE · 2 MIN'}
@@ -683,21 +659,28 @@ export default function HomeScreen() {
             </div>
 
             <div className="lum-module-body">
+              <div className="clay-skill-meter-row">
+                <span className="clay-npi-chip">
+                  {recRating != null ? `NPI ${recRating}` : isAr ? 'التدريب الموصى به' : 'RECOMMENDED SKILL'}
+                </span>
+                {recBand && (
+                  <span className="clay-band-chip">{isAr ? recBand.ar : recBand.en}</span>
+                )}
+              </div>
               <h3 className="lum-module-title">
-                {isAr ? `تقوية ${recMeta.ar}` : `${recMeta.en} Practice`}
-                {recBand ? ` · ${recRating}` : ''}
+                {isAr ? `تقوية ${recMeta.ar}` : `${recMeta.en} Drill`}
               </h3>
               <p className="lum-module-desc">{isAr ? recMeta.descAr : recMeta.descEn}</p>
             </div>
 
             {starterGame && (
-              <div className="lum-module-link">
+              <div className="clay-card-pill-btn clay-card-pill-btn--wide">
+                <Play size={13} weight="fill" aria-hidden="true" />
                 <span>
                   {isAr
-                    ? `العب: ${starterGame.titleAr || starterGame.titleEn}`
-                    : `Play ${starterGame.titleEn}`}
+                    ? `ابدأ: ${starterGame.titleAr || starterGame.titleEn}`
+                    : `Train ${starterGame.titleEn}`}
                 </span>
-                <RowChevron size={15} weight="bold" aria-hidden="true" />
               </div>
             )}
           </button>
@@ -711,16 +694,16 @@ export default function HomeScreen() {
             >
               <span
                 className="lum-tile-icon lum-tile-icon--sm"
-                style={{ backgroundColor: '#0B63CE' }}
+                style={{ backgroundColor: '#2F4A6D' }}
                 aria-hidden="true"
               >
                 <Compass size={19} weight="fill" color="#FFFFFF" />
               </span>
               <span className="lum-row-copy">
-                <span className="lum-row-title">{isAr ? 'تصفّح كل الألعاب (١٨ لعبة)' : 'Browse All 18 Skill Games'}</span>
-                <span className="lum-mini-sub">{isAr ? 'اختر انتباه، سرعة، ذاكرة، لغة أو منطق' : 'Pick Attention, Memory, Speed, Language & more'}</span>
+                <span className="lum-row-title">{isAr ? 'مختبر المهارات المعرفية' : 'Cognitive Skill Labs'}</span>
+                <span className="lum-mini-sub">{isAr ? 'انتباه، سرعة، ذاكرة، لغة، منطق ومرونة' : 'Attention, Speed, Memory, Language & Logic'}</span>
               </span>
-              <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
+              <span className="clay-count-chip">{isAr ? '١٨' : '18'}</span>
             </button>
 
             <button
@@ -730,16 +713,16 @@ export default function HomeScreen() {
             >
               <span
                 className="lum-tile-icon lum-tile-icon--sm"
-                style={{ backgroundColor: '#FF7800' }}
+                style={{ backgroundColor: '#8A9A8C' }}
                 aria-hidden="true"
               >
                 <PuzzlePiece size={19} weight="fill" color="#FFFFFF" />
               </span>
               <span className="lum-row-copy">
-                <span className="lum-row-title">{isAr ? '١٩ لغزاً بدون مؤقت' : '19 Untimed Brain Puzzles'}</span>
-                <span className="lum-mini-sub">{isAr ? 'ألغاز أرقام وتفكير هادئة على راحتك' : 'Sudoku, Tangram & logic at your own pace'}</span>
+                <span className="lum-row-title">{isAr ? 'استوديو الألغاز الصامتة' : 'Untimed Logic Studio'}</span>
+                <span className="lum-mini-sub">{isAr ? 'سودوكو، تانغرام، جسور ومنطق بلا مؤقت' : 'Sudoku, Tangram, Bridges & quiet logic'}</span>
               </span>
-              <RowChevron size={16} weight="bold" className="lum-row-caret" aria-hidden="true" />
+              <span className="clay-count-chip">{isAr ? '١٩' : '19'}</span>
             </button>
           </div>
         </section>

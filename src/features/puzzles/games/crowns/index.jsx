@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Crown } from '@phosphor-icons/react';
 import { useApp } from '../../../../context/AppContext';
 import { TrainingMenuBar, TrainingPlayHeader } from '../../../training/shared/TrainingChrome';
 import { getPuzzle } from '../../registry';
@@ -159,7 +160,7 @@ export default function CrownsPuzzle({ onBack }) {
                       }}
                     >
                       {val === 2 ? (
-                        <span className={`ct-crowns-mark ct-crowns-crown${isBad ? ' is-bad' : ''}`}>👑</span>
+                        <span className={`ct-crowns-mark ct-crowns-crown${isBad ? ' is-bad' : ''}`}><Crown size={18} weight="fill" aria-hidden="true" /></span>
                       ) : val === 1 ? (
                         <span className="ct-crowns-mark ct-crowns-x">×</span>
                       ) : ''}

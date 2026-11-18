@@ -65,33 +65,33 @@
  * for equal contrast against --pz-surface, keeping saturation fixed.
  */
 .pz-theme-numbers {
-  --pz-accent: #897143;
-  --pz-accent-deep: #493a1d;
+  --pz-accent: #2F4A6D;
+  --pz-accent-deep: #233854;
 }
 
 .pz-theme-logic {
-  --pz-accent: #3f7f77;
-  --pz-accent-deep: #1d4944;
+  --pz-accent: #5F7463;
+  --pz-accent-deep: #46584A;
 }
 
 .pz-theme-spatial {
-  --pz-accent: #8266b4;
-  --pz-accent-deep: #2d1d49;
+  --pz-accent: #8A9A8C;
+  --pz-accent-deep: #5C6B5E;
 }
 
 .pz-theme-group {
-  --pz-accent: #ab5f55;
-  --pz-accent-deep: #49221d;
+  --pz-accent: #B5482F;
+  --pz-accent-deep: #8F3722;
 }
 
 .pz-studio {
-  --pz-cosmos: #090d19;
-  --pz-cosmos-mid: #11182a;
-  --pz-on-cosmos: #f5ecdc;
-  --pz-on-cosmos-muted: #b9bfd0;
-  --pz-ink: #17243d;
-  --pz-card: #f7f9fc;
-  --pz-card-soft: #e9eef4;
+  --pz-cosmos: #14181E;
+  --pz-cosmos-mid: #1D232B;
+  --pz-on-cosmos: #F2EEE6;
+  --pz-on-cosmos-muted: #B4AEA2;
+  --pz-ink: #1B1F24;
+  --pz-card: #FAF8F4;
+  --pz-card-soft: #EAE4D8;
   position: absolute;
   inset: 0;
   min-height: 0;
@@ -100,15 +100,12 @@
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: var(--universe-line, rgba(72, 62, 48, 0.34)) transparent;
+  scrollbar-color: var(--universe-line, rgba(27, 31, 36, 0.24)) transparent;
   scrollbar-gutter: stable;
   isolation: isolate;
   color: var(--pz-on-cosmos);
-  background:
-    radial-gradient(ellipse 72% 46% at 18% 12%, rgba(123, 106, 164, 0.19), transparent 72%),
-    radial-gradient(ellipse 66% 42% at 88% 42%, rgba(74, 150, 151, 0.14), transparent 74%),
-    linear-gradient(180deg, var(--pz-cosmos-mid), var(--pz-cosmos));
-  font-family: 'Outfit', 'Cairo', system-ui, sans-serif;
+  background: var(--pz-cosmos);
+  font-family: 'Inter', 'Cairo', system-ui, sans-serif;
 }
 
 .pz-studio::-webkit-scrollbar,

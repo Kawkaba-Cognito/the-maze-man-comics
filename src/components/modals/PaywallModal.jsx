@@ -18,28 +18,28 @@ const VALUE_PROPS = [
   {
     id: 'radar',
     Icon: ChartPolar,
-    color: '#0B63CE',
+    color: '#2F4A6D',
     en: 'Full 6-Domain Cognitive Radar & NPI Insights',
     ar: 'رادار المهارات الستة الكامل ومؤشر الأداء الإدراكي NPI',
   },
   {
     id: 'workouts',
     Icon: Brain,
-    color: '#FF7800',
+    color: '#B5482F',
     en: 'Adaptive Daily Workouts & Custom Focus Modes',
     ar: 'تدريبات يومية متكيفة وأوضاع تركيز مخصصة',
   },
   {
     id: 'library',
     Icon: Sparkle,
-    color: '#FFB012',
+    color: '#8A9A8C',
     en: 'All 18 Clinical Drills & 19 Mind Puzzles',
     ar: 'جميع التمارين الإكلينيكية الـ 18 و19 لغزاً ذهنياً',
   },
   {
     id: 'offline',
     Icon: ShieldCheck,
-    color: '#1CB0F6',
+    color: '#2F4A6D',
     en: 'Ad-Free Offline PWA Access',
     ar: 'وصول كامل بدون إعلانات مع العمل دون إنترنت',
   },
@@ -157,25 +157,13 @@ export default function PaywallModal() {
           <X size={18} weight="bold" aria-hidden="true" />
         </button>
 
-        {/* Nayzak Trio Squad Showcase (Official Nayzak Games Banner Cast) */}
-        <div className="nayzak-paywall-trio" aria-hidden="true">
+        {/* Light Clay Studio Diorama */}
+        <div className="nayzak-paywall-clay-stage" aria-hidden="true">
           <img
-            src={assetUrl('Assets/brand/cast-2026/nayzak-host.webp')}
+            src={assetUrl('Assets/brand/clay-2026/today-hero.webp')}
             alt=""
             draggable="false"
-            className="nayzak-paywall-trio-char is-left"
-          />
-          <img
-            src={assetUrl('Assets/brand/cast-2026/shofata-cheer.webp')}
-            alt=""
-            draggable="false"
-            className="nayzak-paywall-trio-char is-center"
-          />
-          <img
-            src={assetUrl('Assets/brand/cast-2026/zamour-spark.webp')}
-            alt=""
-            draggable="false"
-            className="nayzak-paywall-trio-char is-right"
+            className="nayzak-paywall-clay-img"
           />
         </div>
 

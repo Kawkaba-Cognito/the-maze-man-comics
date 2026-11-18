@@ -30,16 +30,16 @@
    surface, and without --fq-r the corners go square. Any shared component that
    borrows a .ct-fq-* rule must declare these. */
 .ct-play-results {
-  --fq-pri: var(--color-amber);
-  --fq-pdk: #c98a2e;
-  --fq-acc: var(--game-accent);
-  --fq-ac2: #c9847a;
-  --fq-txt: var(--play-ink);
-  --fq-mut: #6b6b6b;
-  --fq-bdr: #d8e3ec;
-  --fq-sur: rgba(246, 250, 255, 0.94);
-  --fq-card: rgba(252, 254, 255, 0.92);
-  --fq-r: 16px;
+  --fq-pri: #2F4A6D;
+  --fq-pdk: #233854;
+  --fq-acc: #B5482F;
+  --fq-ac2: #8A9A8C;
+  --fq-txt: #1B1F24;
+  --fq-mut: #5C6066;
+  --fq-bdr: rgba(27, 31, 36, 0.1);
+  --fq-sur: #FAF8F4;
+  --fq-card: #FAF8F4;
+  --fq-r: 18px;
 }
 
 /* Games that float the HUD over their board wrap it in .ct-playhud-host. That

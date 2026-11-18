@@ -94,20 +94,44 @@ export function drawPiece(ctx, o) {
   ctx.globalAlpha = v.opacity;
   ctx.translate(o.x, o.y);
 
-  // The edge tone, offset down — a flat shape reads as having form because its
-  // lower side is shaded, not because it is drawn in perspective.
+  // Diffused studio contact shadow beneath the polymer clay piece
   ctx.save();
-  ctx.translate(0, r * 0.08);
+  ctx.fillStyle = 'rgba(27, 31, 36, 0.14)';
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.22, r * 0.96, r * 0.88, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Tactile extruded clay base thickness
+  ctx.save();
+  ctx.translate(0, r * 0.11);
   ctx.fillStyle = v.edge;
   paintShape(ctx, r, o.path, 'fill');
   ctx.restore();
 
+  // Soft 3D polymer clay body with diffused top-left overhead dome highlight
+  const dome = ctx.createRadialGradient(-r * 0.34, -r * 0.36, r * 0.08, 0, 0, r * 1.15);
+  dome.addColorStop(0, 'rgba(255, 255, 255, 0.34)');
+  dome.addColorStop(0.55, 'rgba(255, 255, 255, 0.0)');
+  dome.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
   ctx.fillStyle = v.fill;
   paintShape(ctx, r, o.path, 'fill');
+  ctx.fillStyle = dome;
+  paintShape(ctx, r, o.path, 'fill');
 
-  ctx.lineWidth = v.strokeWidth;
+  ctx.lineWidth = Math.max(1.5, v.strokeWidth * 0.85);
   ctx.strokeStyle = v.stroke;
   paintShape(ctx, r, o.path, 'stroke');
+
+  // Subtle clay specular dot sheen on disc shapes
+  if (!o.path) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.38)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.32, -r * 0.36, r * 0.22, r * 0.13, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   if (v.ring !== 'none') {
     ctx.lineWidth = Math.max(2, r * 0.12);
@@ -121,7 +145,7 @@ export function drawPiece(ctx, o) {
 
   if (o.label) {
     ctx.fillStyle = GAME_INK;
-    ctx.font = `700 ${Math.round(r * 0.95)}px Outfit, system-ui, sans-serif`;
+    ctx.font = `700 ${Math.round(r * 0.95)}px Inter, Cairo, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(o.label, 0, r * 0.04);

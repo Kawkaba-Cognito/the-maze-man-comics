@@ -1,0 +1,3273 @@
+/* ==========================================================================
+   NAYZAK MIND — Light Clay Studio Design System
+   Reference: Matte 3D polymer clay on Warm Cream (#F2EEE6)
+   Palette:
+     Background (Warm Cream):   #F2EEE6
+     Raised Plinth:             #FAF8F4
+     Primary (Deep Navy):       #2F4A6D
+     Secondary (Muted Sage):    #8A9A8C
+     Accent (Terracotta):       #B5482F
+     Text / Ink (Charcoal Ink): #1B1F24
+     Muted Text (Slate Grey):   #5C6066
+   ========================================================================== */
+
+:root {
+  --clay-bg: #F2EEE6;
+  --clay-surface: #FAF8F4;
+  --clay-surface-2: #EAE4D8;
+  --clay-navy: #2F4A6D;
+  --clay-navy-deep: #233854;
+  --clay-sage: #8A9A8C;
+  --clay-sage-deep: #6C7D6F;
+  --clay-terracotta: #B5482F;
+  --clay-terracotta-deep: #8F3722;
+  --clay-ink: #1B1F24;
+  --clay-ink-muted: #5C6066;
+  --clay-border: rgba(27, 31, 36, 0.08);
+  --clay-shadow:
+    0 10px 26px rgba(27, 31, 36, 0.06),
+    0 2px 6px rgba(27, 31, 36, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --clay-shadow-hover:
+    0 14px 32px rgba(27, 31, 36, 0.09),
+    0 4px 10px rgba(27, 31, 36, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --clay-font-display: 'Archivo Black', 'Cairo', system-ui, sans-serif;
+  --clay-font-body: 'Inter', 'Cairo', system-ui, -apple-system, sans-serif;
+}
+
+/* ── 1. Warm Cream Studio Canvas (Removes Doodle Wallpaper) ─────────────── */
+html,
+body {
+  background: var(--clay-bg) !important;
+  color: var(--clay-ink);
+  font-family: var(--clay-font-body) !important;
+}
+
+.nayzak-page,
+#screen-home,
+#screen-domains,
+#screen-puzzles,
+#screen-profile {
+  background-color: var(--clay-bg) !important;
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(242, 238, 230, 0) 68%
+  ) !important;
+  background-size: 100% 100% !important;
+  color: var(--clay-ink);
+  font-family: var(--clay-font-body);
+}
+
+/* ── 2. Editorial Typography (Archivo Black Display + Inter Body + Cairo AR) */
+.lum-screen-title,
+.lum-hero-title,
+.lum-domain-card-title,
+.lum-domain-detail-title,
+.nayzak-spotlight-title,
+.nayzak-header-title,
+.duo-profile-name,
+.duo-stat-card-val,
+.duo-victory-title,
+.duo-victory-stat-val,
+.nayzak-paywall-title {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-ink);
+  letter-spacing: -0.015em;
+}
+
+[dir='rtl'] .lum-screen-title,
+[dir='rtl'] .lum-hero-title,
+[dir='rtl'] .lum-domain-card-title,
+[dir='rtl'] .lum-domain-detail-title,
+[dir='rtl'] .nayzak-spotlight-title,
+[dir='rtl'] .nayzak-header-title,
+[dir='rtl'] .duo-profile-name,
+[dir='rtl'] .duo-stat-card-val,
+[dir='rtl'] .duo-victory-title,
+[dir='rtl'] .duo-victory-stat-val,
+[dir='rtl'] .nayzak-paywall-title {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+}
+
+.lum-date-label,
+.lum-module-badge,
+.lum-domain-kicker,
+.nayzak-tab-helper,
+.nayzak-hero-speech,
+.lum-domain-card-desc,
+.lum-domain-detail-desc,
+.lum-domain-prog-lbl,
+.nayzak-row-sub,
+.lum-mini-sub,
+.nayzak-spotlight-sub,
+.duo-cog-subtitle,
+.duo-xp-label,
+.duo-stat-card-lbl {
+  font-family: var(--clay-font-body);
+  color: var(--clay-ink-muted);
+}
+
+/* ── 3. Header, Desktop Navigation Rail & Bottom Tab Bar ─────────────────── */
+.nayzak-header.duo-styled-header {
+  background: rgba(242, 238, 230, 0.9) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: 0 2px 10px rgba(27, 31, 36, 0.03) !important;
+}
+
+.duo-stat-pill,
+.duo-lang-pill,
+.nayzak-pill-btn {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: 0 2px 6px rgba(27, 31, 36, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+}
+
+.duo-stat-pill--streak {
+  color: var(--clay-terracotta) !important;
+}
+
+.duo-stat-pill--energy {
+  color: var(--clay-navy) !important;
+}
+
+.duo-lang-pill {
+  color: var(--clay-navy) !important;
+}
+
+.nayzak-brand-emblem {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: 0 3px 8px rgba(27, 31, 36, 0.07) !important;
+}
+
+.nayzak-games-wordmark-img {
+  filter: none !important;
+}
+
+/* Desktop Rail */
+.nayzak-desktop-rail {
+  background: var(--clay-surface) !important;
+  border-inline-end: 1px solid var(--clay-border) !important;
+  box-shadow: 4px 0 20px rgba(27, 31, 36, 0.03);
+}
+
+.nayzak-rail-brand {
+  border-bottom-color: var(--clay-border) !important;
+}
+
+.nayzak-rail-link {
+  font-family: var(--clay-font-body) !important;
+  color: var(--clay-ink-muted) !important;
+  font-weight: 600 !important;
+}
+
+.nayzak-rail-link:hover {
+  background: rgba(47, 74, 109, 0.06) !important;
+  color: var(--clay-ink) !important;
+}
+
+.nayzak-rail-link.is-active {
+  background: rgba(47, 74, 109, 0.11) !important;
+  color: var(--clay-navy) !important;
+  font-weight: 700 !important;
+}
+
+.nayzak-rail-pro-card {
+  background: var(--clay-navy) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--clay-shadow);
+}
+
+.nayzak-rail-mascot {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+}
+
+.nayzak-rail-pro-btn {
+  background: var(--clay-terracotta) !important;
+  color: var(--clay-surface) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+}
+
+.nayzak-rail-pro-btn:hover {
+  background: var(--clay-terracotta-deep) !important;
+}
+
+/* Bottom Tab Bar (Konsta) */
+.app-tabbar-konsta {
+  background: rgba(250, 248, 244, 0.94) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--clay-border) !important;
+  box-shadow: 0 -4px 20px rgba(27, 31, 36, 0.04);
+}
+
+.app-tabbar-konsta .k-tabbar-link {
+  color: var(--clay-ink-muted) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+.app-tabbar-konsta .k-tabbar-link.is-active,
+.app-tabbar-konsta .k-tabbar-link.k-tabbar-link-active {
+  color: var(--clay-navy) !important;
+  font-weight: 700 !important;
+}
+
+/* ── 4. Matte Clay Plinths (Strips Cartoon Outlines & Toy Shadows) ───────── */
+.lum-hero-card,
+.lum-hero-card--nayzak,
+.lum-module-card,
+.lum-domain-card,
+.lum-domain-card--illustrated,
+.lum-domain-detail-card,
+.lum-radar-card,
+.lum-identity-compact,
+.nayzak-welcome-card,
+.nayzak-spotlight-btn,
+.duo-identity-card,
+.duo-stat-card,
+.duo-section-card {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--clay-shadow) !important;
+}
+
+.lum-domain-card--illustrated:hover,
+.lum-module-card--focus:hover,
+.nayzak-spotlight-btn:hover {
+  border-color: rgba(47, 74, 109, 0.22) !important;
+  border-bottom-color: rgba(47, 74, 109, 0.22) !important;
+  box-shadow: var(--clay-shadow-hover) !important;
+  transform: translateY(-2px);
+}
+
+/* Welcome quick-start guide */
+.nayzak-welcome-card {
+  background: var(--clay-surface) !important;
+  padding: 15px 16px !important;
+}
+
+.nayzak-welcome-title {
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+  color: var(--clay-ink) !important;
+}
+
+.nayzak-welcome-step {
+  background: var(--clay-bg) !important;
+  color: var(--clay-ink) !important;
+  border: 1px solid var(--clay-border);
+  font-weight: 500 !important;
+}
+
+.nayzak-welcome-dismiss {
+  background: var(--clay-navy) !important;
+  color: var(--clay-surface) !important;
+  border: none !important;
+  padding: 5px 12px !important;
+  font-weight: 700 !important;
+}
+
+.nayzak-help-chip {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+/* ── 5. Editorial Clay Badges (Replaces Tilted Comic Yellow Ribbons) ────── */
+.nayzak-comic-ribbon {
+  transform: none !important;
+  background: rgba(138, 154, 140, 0.18) !important;
+  color: var(--clay-navy) !important;
+  border: 1px solid rgba(47, 74, 109, 0.14) !important;
+  box-shadow: none !important;
+  border-radius: 999px !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  padding: 4px 11px !important;
+}
+
+.lum-streak-chip {
+  background: rgba(181, 72, 47, 0.11) !important;
+  color: var(--clay-terracotta) !important;
+}
+
+.ed-week-day.is-today .ed-week-lbl {
+  color: var(--clay-navy) !important;
+}
+
+.ed-week-dot {
+  background: var(--clay-surface-2) !important;
+}
+
+.ed-week-day.is-today .ed-week-dot {
+  background: rgba(47, 74, 109, 0.14) !important;
+  box-shadow: inset 0 0 0 1.5px var(--clay-navy) !important;
+}
+
+.ed-week-day.is-partial .ed-week-dot {
+  background: var(--clay-terracotta) !important;
+}
+
+.ed-week-day.is-complete .ed-week-dot {
+  background: var(--clay-sage) !important;
+}
+
+/* ── 6. Today Hero & Spotlight Clay Frames ──────────────────────────────── */
+.nayzak-hero-host-box,
+.nayzak-spotlight-char {
+  width: 96px !important;
+  height: 82px !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: inset 0 1px 2px rgba(27, 31, 36, 0.04) !important;
+  overflow: hidden !important;
+}
+
+.nayzak-hero-host-img,
+.nayzak-spotlight-char img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.ed-focus-btn,
+.ed-goal-picker {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink) !important;
+}
+
+.ed-goal-chip {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink) !important;
+}
+
+.ed-goal-chip.is-active {
+  background: var(--clay-navy) !important;
+  border-color: var(--clay-navy) !important;
+  color: var(--clay-surface) !important;
+}
+
+.lum-hero-eyebrow,
+.lum-module-link {
+  color: var(--clay-navy) !important;
+}
+
+.lum-row-title {
+  color: var(--clay-ink) !important;
+  font-weight: 700 !important;
+}
+
+.lum-step-num {
+  background: var(--clay-surface-2) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+.lum-step-num.is-next {
+  background: var(--clay-navy) !important;
+  color: var(--clay-surface) !important;
+}
+
+.lum-step-done {
+  background: var(--clay-sage) !important;
+  color: var(--clay-surface) !important;
+}
+
+.ed-done-banner {
+  background: rgba(138, 154, 140, 0.16) !important;
+  color: var(--clay-navy) !important;
+}
+
+/* ── 7. Primary Clay Buttons (Deep Navy #2F4A6D) ────────────────────────── */
+.lum-primary-cta,
+.nayzak-spotlight-play,
+.ed-primary-cta,
+.duo-play-btn {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+  border: none !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  box-shadow: 0 6px 16px rgba(47, 74, 109, 0.2) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+}
+
+.lum-primary-cta:hover,
+.nayzak-spotlight-play:hover,
+.ed-primary-cta:hover {
+  background: #37567E !important;
+}
+
+.lum-primary-cta:active,
+.nayzak-spotlight-play:active,
+.ed-primary-cta:active {
+  transform: translateY(1px) !important;
+  border-bottom-width: 2px !important;
+}
+
+/* ── 8. Domain & Puzzle Illustrated Clay Card Stages ────────────────────── */
+.lum-card-stage {
+  height: 152px !important;
+  padding: 0 !important;
+  background: var(--clay-bg) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+}
+
+.lum-card-stage-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  filter: none !important;
+}
+
+.lum-stage-pill {
+  background: rgba(250, 248, 244, 0.92) !important;
+  color: var(--clay-ink) !important;
+  border: 1px solid var(--clay-border);
+  box-shadow: 0 2px 8px rgba(27, 31, 36, 0.08) !important;
+}
+
+.nayzak-stage-guardian {
+  background: rgba(250, 248, 244, 0.92) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: 0 2px 8px rgba(27, 31, 36, 0.08) !important;
+  color: var(--clay-ink) !important;
+}
+
+.nayzak-mini-guardian,
+.lum-guardian-avatar {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: 0 2px 6px rgba(27, 31, 36, 0.06) !important;
+}
+
+.lum-detail-art-box {
+  width: 84px !important;
+  height: 84px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+}
+
+.lum-detail-art-box img {
+  object-fit: cover !important;
+}
+
+.lum-count-pill {
+  background: rgba(27, 31, 36, 0.06) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+.lum-rating-chip {
+  background: rgba(47, 74, 109, 0.11) !important;
+  color: var(--clay-navy) !important;
+}
+
+.lum-domain-prog-track {
+  background: var(--clay-surface-2) !important;
+}
+
+.duo-domain-pill {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+.duo-domain-pill.is-active {
+  background: var(--clay-navy) !important;
+  border-color: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+}
+
+/* Konsta Inset List Cards inside Domains / Puzzles */
+.k-ios .k-list-strong {
+  --k-color-ios-light-surface-1: #FAF8F4;
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border);
+  box-shadow: var(--clay-shadow);
+  border-radius: 18px;
+}
+
+/* ── 9. Profile / Insights Clay Polish ──────────────────────────────────── */
+.duo-avatar-circle {
+  background: var(--clay-bg) !important;
+  border: 2px solid var(--clay-navy) !important;
+  box-shadow: 0 6px 16px rgba(27, 31, 36, 0.08) !important;
+}
+
+.duo-level-badge {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+  border: 2px solid var(--clay-surface) !important;
+}
+
+.nayzak-profile-cast-tag {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink) !important;
+}
+
+.duo-xp-track {
+  background: var(--clay-surface-2) !important;
+}
+
+.duo-xp-fill {
+  background: linear-gradient(90deg, var(--clay-sage) 0%, var(--clay-navy) 100%) !important;
+}
+
+.duo-pose-btn {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+}
+
+.duo-pose-btn.is-selected {
+  border-color: var(--clay-navy) !important;
+  background: rgba(47, 74, 109, 0.1) !important;
+}
+
+.lum-pro-insight-card {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+  border: none !important;
+  box-shadow: var(--clay-shadow) !important;
+}
+
+.ed-pro-btn {
+  background: var(--clay-terracotta) !important;
+  color: var(--clay-surface) !important;
+}
+
+.duo-action-btn {
+  background: var(--clay-bg) !important;
+  color: var(--clay-navy) !important;
+  border: 1px solid var(--clay-border) !important;
+}
+
+/* ── 10. In-Game Shared Shell Harmonization ─────────────────────────────── */
+.duo-game-screen,
+.duo-victory-screen {
+  background: var(--clay-bg) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+.duo-game-top-bar {
+  background: var(--clay-surface) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+}
+
+.duo-game-close-btn,
+.duo-game-metric-pill,
+.duo-prompt-bubble,
+.duo-victory-stat-box {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-ink) !important;
+}
+
+.duo-game-metric-pill {
+  color: var(--clay-terracotta) !important;
+}
+
+.duo-game-progress-track {
+  background: var(--clay-surface-2) !important;
+}
+
+.duo-game-progress-fill {
+  background: linear-gradient(90deg, var(--clay-sage) 0%, var(--clay-navy) 100%) !important;
+}
+
+.duo-feedback-drawer.is-correct {
+  background: #E4ECE4 !important;
+  border-top: 1px solid rgba(138, 154, 140, 0.4) !important;
+}
+
+.duo-feedback-drawer.is-correct .duo-feedback-title {
+  color: #3E5942 !important;
+}
+
+.duo-feedback-drawer.is-correct .duo-btn-continue,
+.duo-victory-action-btn {
+  background: var(--clay-navy) !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  color: var(--clay-bg) !important;
+}
+
+.duo-feedback-drawer.is-wrong {
+  background: #F4E1DC !important;
+  border-top: 1px solid rgba(181, 72, 47, 0.35) !important;
+}
+
+.duo-feedback-drawer.is-wrong .duo-feedback-title {
+  color: var(--clay-terracotta) !important;
+}
+
+.duo-feedback-drawer.is-wrong .duo-btn-continue {
+  background: var(--clay-terracotta) !important;
+  border-bottom: 3px solid var(--clay-terracotta-deep) !important;
+  color: var(--clay-surface) !important;
+}
+
+.duo-victory-title {
+  color: var(--clay-navy) !important;
+}
+
+.duo-victory-stat-val {
+  color: var(--clay-navy) !important;
+}
+
+/* ── 11. Dark Studio Mode Harmonization ─────────────────────────────────── */
+html[data-home-theme='dark'],
+html[data-home-theme='dark'] body,
+html[data-home-theme='dark'] .nayzak-page,
+html[data-home-theme='dark'] #screen-home,
+html[data-home-theme='dark'] #screen-domains,
+html[data-home-theme='dark'] #screen-puzzles,
+html[data-home-theme='dark'] #screen-profile {
+  background: #14181E !important;
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgba(47, 74, 109, 0.18) 0%,
+    rgba(20, 24, 30, 0) 68%
+  ) !important;
+  color: #F2EEE6;
+}
+
+html[data-home-theme='dark'] .nayzak-header.duo-styled-header {
+  background: rgba(20, 24, 30, 0.9) !important;
+  border-bottom-color: rgba(242, 238, 230, 0.08) !important;
+}
+
+html[data-home-theme='dark'] .nayzak-desktop-rail {
+  background: #1B2028 !important;
+  border-inline-end-color: rgba(242, 238, 230, 0.08) !important;
+}
+
+html[data-home-theme='dark'] .app-tabbar-konsta {
+  background: rgba(27, 32, 40, 0.94) !important;
+  border-top-color: rgba(242, 238, 230, 0.08) !important;
+}
+
+html[data-home-theme='dark'] .lum-screen-title,
+html[data-home-theme='dark'] .lum-hero-title,
+html[data-home-theme='dark'] .lum-domain-card-title,
+html[data-home-theme='dark'] .lum-domain-detail-title,
+html[data-home-theme='dark'] .nayzak-spotlight-title,
+html[data-home-theme='dark'] .nayzak-header-title,
+html[data-home-theme='dark'] .duo-profile-name,
+html[data-home-theme='dark'] .lum-row-title,
+html[data-home-theme='dark'] .lum-module-title,
+html[data-home-theme='dark'] .nayzak-welcome-title {
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] .lum-date-label,
+html[data-home-theme='dark'] .nayzak-tab-helper,
+html[data-home-theme='dark'] .nayzak-hero-speech,
+html[data-home-theme='dark'] .lum-domain-card-desc,
+html[data-home-theme='dark'] .lum-domain-detail-desc,
+html[data-home-theme='dark'] .lum-domain-prog-lbl,
+html[data-home-theme='dark'] .nayzak-row-sub,
+html[data-home-theme='dark'] .lum-mini-sub,
+html[data-home-theme='dark'] .nayzak-spotlight-sub {
+  color: #B4AEA2 !important;
+}
+
+html[data-home-theme='dark'] .lum-hero-card,
+html[data-home-theme='dark'] .lum-hero-card--nayzak,
+html[data-home-theme='dark'] .lum-module-card,
+html[data-home-theme='dark'] .lum-domain-card,
+html[data-home-theme='dark'] .lum-domain-card--illustrated,
+html[data-home-theme='dark'] .lum-domain-detail-card,
+html[data-home-theme='dark'] .lum-radar-card,
+html[data-home-theme='dark'] .lum-identity-compact,
+html[data-home-theme='dark'] .nayzak-welcome-card,
+html[data-home-theme='dark'] .nayzak-spotlight-btn,
+html[data-home-theme='dark'] .duo-identity-card,
+html[data-home-theme='dark'] .duo-stat-card,
+html[data-home-theme='dark'] .duo-section-card,
+html[data-home-theme='dark'] .duo-stat-pill,
+html[data-home-theme='dark'] .duo-lang-pill,
+html[data-home-theme='dark'] .nayzak-pill-btn {
+  background: #1D232B !important;
+  border-color: rgba(242, 238, 230, 0.09) !important;
+  border-bottom-color: rgba(242, 238, 230, 0.09) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32) !important;
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] .nayzak-welcome-step,
+html[data-home-theme='dark'] .ed-focus-btn,
+html[data-home-theme='dark'] .ed-goal-picker,
+html[data-home-theme='dark'] .ed-goal-chip,
+html[data-home-theme='dark'] .duo-action-btn {
+  background: #14181E !important;
+  border-color: rgba(242, 238, 230, 0.1) !important;
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] .lum-stage-pill,
+html[data-home-theme='dark'] .nayzak-stage-guardian {
+  background: rgba(29, 35, 43, 0.92) !important;
+  color: #F2EEE6 !important;
+  border-color: rgba(242, 238, 230, 0.12) !important;
+}
+
+html[data-home-theme='dark'] .nayzak-comic-ribbon {
+  background: rgba(138, 154, 140, 0.22) !important;
+  color: #C7D6C8 !important;
+  border-color: rgba(138, 154, 140, 0.3) !important;
+}
+
+html[data-home-theme='dark'] .lum-module-link,
+html[data-home-theme='dark'] .nayzak-rail-link.is-active {
+  color: #9BB4D4 !important;
+}
+
+/* ── 12. NAYZAK MIND Brand Lockup & Paywall Clay Stage ──────────────────── */
+.nayzak-clay-emblem {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: 0 3px 10px rgba(27, 31, 36, 0.08) !important;
+  padding: 0 !important;
+}
+
+.nayzak-clay-emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nayzak-brand-title {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  font-size: 17px !important;
+  letter-spacing: 0.02em !important;
+  color: var(--clay-ink) !important;
+  line-height: 1 !important;
+}
+
+.nayzak-brand-sub {
+  font-family: var(--clay-font-body) !important;
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.16em !important;
+  color: var(--clay-navy) !important;
+  margin-top: 2px !important;
+}
+
+html[data-home-theme='dark'] .nayzak-brand-title,
+.dark .nayzak-brand-title {
+  color: var(--clay-bg) !important;
+}
+
+html[data-home-theme='dark'] .nayzak-brand-sub,
+.dark .nayzak-brand-sub {
+  color: var(--clay-sage) !important;
+}
+
+.nayzak-paywall-clay-stage {
+  width: 100%;
+  max-width: 220px;
+  height: 128px;
+  margin: 0 auto 12px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--clay-border);
+  box-shadow: var(--clay-shadow);
+  background: var(--clay-bg);
+}
+
+.nayzak-paywall-clay-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Profile clay medallion crop */
+.duo-avatar-circle {
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-width: 2.5px !important;
+}
+
+.duo-avatar-circle img {
+  object-fit: cover !important;
+  object-position: center center !important;
+  padding: 0 !important;
+}
+
+.duo-pose-btn {
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+}
+
+.duo-pose-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+}
+
+/* ── 13. INSIDE ALL 18 TRAINING GAMES — Pure Light Clay Studio Canvas ───── */
+/* Strips antique star-chart bands (cancel-starchart-band-*) & legacy scenes */
+.ct-domain-game-stage,
+.ct-domain-game-stage:has([data-gameplay-active='true']),
+.ct-domain-game-stage:has(.cancellation-task-game .ct-fq-play[data-gameplay-active='true']) {
+  background-color: var(--clay-bg) !important;
+  background-image: none !important;
+}
+
+.ct-domain-game-stage::before,
+.ct-domain-game-stage:has([data-gameplay-active='true'])::before,
+.ct-domain-game-stage::after,
+.cx-page,
+.ct-fq-training-shell,
+.ct-fq-training-shell--mode-cosmos,
+.ct-fq-training-shell--hub-light {
+  background-color: var(--clay-bg) !important;
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(242, 238, 230, 0) 65%
+  ) !important;
+}
+
+html[data-home-theme='dark'] .ct-domain-game-stage,
+html[data-home-theme='dark'] .ct-domain-game-stage:has([data-gameplay-active='true']),
+html[data-home-theme='dark'] .ct-domain-game-stage::before,
+html[data-home-theme='dark'] .ct-domain-game-stage:has([data-gameplay-active='true'])::before,
+html[data-home-theme='dark'] .ct-fq-training-shell,
+html[data-home-theme='dark'] .ct-fq-training-shell--mode-cosmos {
+  background-color: #14181E !important;
+  background-image: none !important;
+}
+
+/* Shared In-Game Tokens (--fq-* & --cx-*) */
+.cancellation-task-game,
+.ct-fq-training-shell,
+.cx-atlas,
+.ct-fq-bar,
+.ct-fq-cbw,
+.ct-fq-pbw,
+.ct-play-results {
+  --fq-pri: #2F4A6D;
+  --fq-pdk: #233854;
+  --fq-acc: #B5482F;
+  --fq-ac2: #8A9A8C;
+  --fq-txt: #1B1F24;
+  --fq-mut: #5C6066;
+  --fq-bdr: rgba(27, 31, 36, 0.1);
+  --fq-sur: #FAF8F4;
+  --fq-card: #FAF8F4;
+  --fq-r: 18px;
+  font-family: var(--clay-font-body);
+}
+
+/* Mode Hub & Menu Bar */
+.ct-training-menubar {
+  background: rgba(242, 238, 230, 0.92) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--clay-border) !important;
+}
+
+.ct-training-chrome-btn {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: 0 3px 8px rgba(27, 31, 36, 0.06) !important;
+  color: var(--clay-ink) !important;
+  border-radius: 12px !important;
+}
+
+.ct-fq-hub-attn-big,
+.ct-fq-training-title,
+.ct-lv-hero-title,
+.ct-play-results-title,
+.ct-fq-sbig {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-ink) !important;
+}
+
+[dir='rtl'] .ct-fq-hub-attn-big,
+[dir='rtl'] .ct-fq-training-title,
+[dir='rtl'] .ct-lv-hero-title,
+[dir='rtl'] .ct-play-results-title,
+[dir='rtl'] .ct-fq-sbig {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+}
+
+.ct-fq-hub-attn-sub,
+.ct-lv-hero-sub,
+.ct-play-results-kicker,
+.ct-play-results-notes {
+  font-family: var(--clay-font-body) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+/* Mode Hub Cards (Levels / Survival / Pass n Play) */
+.clay-mode-hub .ct-mph-slot {
+  border-bottom: none !important;
+  margin: 0 0 12px !important;
+}
+
+.ct-mph-planet.duo-mode-card.clay-mode-card {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--clay-shadow) !important;
+  padding: 16px 18px !important;
+  gap: 14px !important;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.ct-mph-planet.duo-mode-card.clay-mode-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(47, 74, 109, 0.24) !important;
+  box-shadow: var(--clay-shadow-hover) !important;
+}
+
+.clay-mode-token {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 15px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #FAF8F4 !important;
+  border: none !important;
+  box-shadow: 0 6px 14px rgba(27, 31, 36, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.duo-mode--levels.clay-mode-token {
+  background: var(--clay-navy) !important;
+}
+
+.duo-mode--free.clay-mode-token {
+  background: var(--clay-terracotta) !important;
+}
+
+.duo-mode--chal.clay-mode-token {
+  background: var(--clay-sage) !important;
+}
+
+.duo-mode--proto3d.clay-mode-token {
+  background: #5C6066 !important;
+}
+
+.ct-mph-planet-name {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-ink) !important;
+  font-size: 16px !important;
+}
+
+[dir='rtl'] .ct-mph-planet-name {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 800 !important;
+}
+
+.ct-mph-planet-hint {
+  font-family: var(--clay-font-body) !important;
+  color: var(--clay-ink-muted) !important;
+  font-size: 12.5px !important;
+}
+
+/* Level Progression Path (PlanetPath -> Matte Clay Trail) */
+.cpp-orb {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow:
+    0 8px 18px rgba(27, 31, 36, 0.08),
+    inset 0 2px 3px rgba(255, 255, 255, 0.8) !important;
+}
+
+.cpp-node--done .cpp-orb {
+  background: var(--clay-sage) !important;
+  border-color: var(--clay-sage-deep) !important;
+  box-shadow: 0 6px 16px rgba(138, 154, 140, 0.28) !important;
+}
+
+.cpp-node--done .cpp-num {
+  color: #FAF8F4 !important;
+}
+
+.cpp-node--current .cpp-orb {
+  background: var(--clay-navy) !important;
+  border-color: var(--clay-navy-deep) !important;
+  box-shadow:
+    0 10px 24px rgba(47, 74, 109, 0.3),
+    0 0 0 6px rgba(47, 74, 109, 0.14) !important;
+}
+
+.cpp-node--current .cpp-num {
+  color: #F2EEE6 !important;
+}
+
+.cpp-node--locked .cpp-orb {
+  background: var(--clay-surface-2) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.cpp-sub {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+}
+
+.cpp-trail-rest {
+  stroke: #D8D0C2 !important;
+}
+
+.cpp-trail-done {
+  stroke: var(--clay-sage) !important;
+}
+
+/* Hide cartoon Kawkab floating sprite on the clay path */
+.cpp-kawkab {
+  display: none !important;
+}
+
+/* Shared In-Game HUD, Cards, Buttons & Results */
+.ct-fq-bar,
+.ct-fq-card,
+.ct-play-results-card,
+.ct-lv-select-card,
+.ct-fq-diffcard {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-ink) !important;
+}
+
+.ct-fq-btn-pri,
+.ct-fq-btn.ct-fq-btn-pri {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+  border: none !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  box-shadow: 0 6px 16px rgba(47, 74, 109, 0.22) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+  border-radius: 999px !important;
+}
+
+.ct-fq-btn-ghost,
+.ct-fq-btn.ct-fq-btn-ghost {
+  background: var(--clay-bg) !important;
+  color: var(--clay-ink) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-radius: 999px !important;
+}
+
+/* Puzzle Studio In-Game Clay Harmonization */
+.pz-studio-game {
+  background: var(--clay-bg) !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+.pz-studio-game .pz-board,
+.pz-studio-game .pz-card,
+.pz-studio-game .pz-panel {
+  background: var(--clay-surface) !important;
+  border-color: var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+}
+
+html[data-home-theme='dark'] .ct-mph-planet.duo-mode-card.clay-mode-card,
+html[data-home-theme='dark'] .ct-fq-bar,
+html[data-home-theme='dark'] .ct-fq-card,
+html[data-home-theme='dark'] .ct-play-results-card,
+html[data-home-theme='dark'] .ct-lv-select-card,
+html[data-home-theme='dark'] .ct-fq-diffcard,
+html[data-home-theme='dark'] .cpp-sub {
+  background: #1D232B !important;
+  border-color: rgba(242, 238, 230, 0.1) !important;
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] .ct-fq-hub-attn-big,
+html[data-home-theme='dark'] .ct-fq-training-title,
+html[data-home-theme='dark'] .ct-lv-hero-title,
+html[data-home-theme='dark'] .ct-play-results-title,
+html[data-home-theme='dark'] .ct-fq-sbig,
+html[data-home-theme='dark'] .ct-mph-planet-name {
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] .ct-fq-hub-attn-sub,
+html[data-home-theme='dark'] .ct-lv-hero-sub,
+html[data-home-theme='dark'] .ct-mph-planet-hint {
+  color: #B4AEA2 !important;
+}
+
+html[data-home-theme='dark'] .ct-training-menubar {
+  background: rgba(20, 24, 30, 0.9) !important;
+  border-bottom-color: rgba(242, 238, 230, 0.08) !important;
+}
+
+html[data-home-theme='dark'] .ct-training-chrome-btn {
+  background: #1D232B !important;
+  color: #F2EEE6 !important;
+  border-color: rgba(242, 238, 230, 0.1) !important;
+}
+
+/* Tactile Matte Polymer Clay Token Shading */
+.lum-tile-icon {
+  border-radius: 14px !important;
+  box-shadow:
+    0 5px 12px rgba(27, 31, 36, 0.14),
+    inset 0 2px 3px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.16) !important;
+}
+
+/* ── 14. High-Specificity Inside-Game Overrides (Mode Hub, Level Path, HUD, Coach) */
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet.duo-mode-card {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  border-radius: 22px !important;
+  box-shadow: var(--clay-shadow) !important;
+}
+
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet.duo-mode-card:hover,
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet.duo-mode-card.is-hot {
+  border-color: rgba(47, 74, 109, 0.28) !important;
+  box-shadow: var(--clay-shadow-hover) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap {
+  border-bottom: none !important;
+  box-shadow:
+    0 6px 14px rgba(27, 31, 36, 0.14),
+    inset 0 2px 3px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.16) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--levels {
+  background: var(--clay-navy) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--free {
+  background: var(--clay-terracotta) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--chal {
+  background: var(--clay-sage) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--proto3d {
+  background: #5C6066 !important;
+}
+
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet-name {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-ink) !important;
+}
+
+[dir='rtl'] html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet-name {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+}
+
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet-hint {
+  font-family: var(--clay-font-body) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-sci-link--chip {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-navy) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+/* Level Path (PlanetPath) */
+html body .duo-game-modal-host .cpp-page .ct-training-menubar {
+  background: rgba(242, 238, 230, 0.92) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-trail-rest {
+  stroke: #D6CFC1 !important;
+  stroke-width: 5px !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-trail-done {
+  stroke: var(--clay-sage) !important;
+  stroke-width: 6px !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band .cpp-band-rule {
+  background: #DED7C9 !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band .cpp-band-pill {
+  background: var(--clay-navy) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  box-shadow: 0 8px 20px rgba(47, 74, 109, 0.18) !important;
+  color: var(--clay-bg) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band[data-section='ember'] .cpp-band-pill {
+  background: var(--clay-terracotta) !important;
+  border-bottom-color: var(--clay-terracotta-deep) !important;
+  box-shadow: 0 8px 20px rgba(181, 72, 47, 0.18) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band[data-section='verdant'] .cpp-band-pill {
+  background: #5F7463 !important;
+  border-bottom-color: #485A4B !important;
+  box-shadow: 0 8px 20px rgba(95, 116, 99, 0.18) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band[data-section='dust'] .cpp-band-pill {
+  background: #7B5E4B !important;
+  border-bottom-color: #5E4637 !important;
+  box-shadow: 0 8px 20px rgba(123, 94, 75, 0.18) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band[data-section='tempest'] .cpp-band-pill {
+  background: #3B4D63 !important;
+  border-bottom-color: #2A3848 !important;
+  box-shadow: 0 8px 20px rgba(59, 77, 99, 0.18) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band[data-section='void'] .cpp-band-pill {
+  background: #474D56 !important;
+  border-bottom-color: #32373E !important;
+  box-shadow: 0 8px 20px rgba(71, 77, 86, 0.18) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-band .cpp-band-name {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-bg) !important;
+}
+
+[dir='rtl'] html body .duo-game-modal-host .cpp-page .cpp-band .cpp-band-name {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node[data-section] .cpp-orb,
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node .cpp-orb {
+  width: 70px !important;
+  height: 70px !important;
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow:
+    0 8px 18px rgba(27, 31, 36, 0.09),
+    inset 0 2px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 5px rgba(27, 31, 36, 0.08) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node[data-section] .cpp-num,
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node .cpp-num {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  font-size: 21px !important;
+  color: var(--clay-ink) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node[data-section].cpp-node--current .cpp-orb,
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--current .cpp-orb {
+  background: var(--clay-navy) !important;
+  border-color: var(--clay-navy-deep) !important;
+  box-shadow:
+    0 10px 24px rgba(47, 74, 109, 0.28),
+    0 0 0 6px rgba(47, 74, 109, 0.14),
+    inset 0 2px 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node[data-section].cpp-node--current .cpp-num,
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--current .cpp-num {
+  color: var(--clay-bg) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node[data-section].cpp-node--done .cpp-orb,
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--done .cpp-orb {
+  background: var(--clay-sage) !important;
+  border-color: var(--clay-sage-deep) !important;
+  box-shadow:
+    0 8px 18px rgba(138, 154, 140, 0.25),
+    inset 0 2px 3px rgba(255, 255, 255, 0.25) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node[data-section].cpp-node--done .cpp-num,
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--done .cpp-num {
+  color: var(--clay-surface) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--locked .cpp-orb {
+  background: var(--clay-surface-2) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--locked .cpp-num {
+  color: var(--clay-ink-muted) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-badge--done {
+  background: var(--clay-surface) !important;
+  border: 1.5px solid var(--clay-sage) !important;
+  color: var(--clay-sage-deep) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-sub {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  color: var(--clay-navy) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(27, 31, 36, 0.06) !important;
+}
+
+/* Help Modal, Survival Intro, Pass & Play, Results & Buttons */
+html body .duo-game-modal-host .cpp-help-card,
+html body .duo-game-modal-host .ct-survival-intro-body,
+html body .duo-game-modal-host .ct-pp-card,
+html body .duo-game-modal-host .ct-lv-select-card,
+html body .duo-game-modal-host .ct-play-results-card,
+html body .duo-game-modal-host .ct-training-modal,
+html body .duo-game-modal-host .ct-training-handoff {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-ink) !important;
+}
+
+html body .duo-game-modal-host .cpp-help-k {
+  color: var(--clay-terracotta) !important;
+}
+
+html body .duo-game-modal-host .duo-survival-hero-badge {
+  background: var(--clay-terracotta) !important;
+  border-bottom: 3px solid var(--clay-terracotta-deep) !important;
+  box-shadow: 0 10px 22px rgba(181, 72, 47, 0.22) !important;
+}
+
+html body .duo-game-modal-host .ct-survival-intro-title,
+html body .duo-game-modal-host .ct-pp-hero-title,
+html body .duo-game-modal-host .ct-lv-hero-title,
+html body .duo-game-modal-host .ct-play-results-title,
+html body .duo-game-modal-host .ct-training-modal-title,
+html body .duo-game-modal-host .ct-training-handoff-name {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-ink) !important;
+}
+
+[dir='rtl'] html body .duo-game-modal-host .ct-survival-intro-title,
+[dir='rtl'] html body .duo-game-modal-host .ct-pp-hero-title,
+[dir='rtl'] html body .duo-game-modal-host .ct-lv-hero-title,
+[dir='rtl'] html body .duo-game-modal-host .ct-play-results-title,
+[dir='rtl'] html body .duo-game-modal-host .ct-training-modal-title,
+[dir='rtl'] html body .duo-game-modal-host .ct-training-handoff-name {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+}
+
+html body .duo-game-modal-host .cpp-help-btn,
+html body .duo-game-modal-host .cpp-help-card .ct-fq-btn,
+html body .duo-game-modal-host .ct-survival-intro-go,
+html body .duo-game-modal-host .ct-training-btn--pri,
+html body .duo-game-modal-host .ct-training-btn--start,
+html body .duo-game-modal-host .ct-fq-btn-pri {
+  background: var(--clay-navy) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 0 var(--clay-navy-deep), 0 8px 18px rgba(47, 74, 109, 0.2) !important;
+  color: var(--clay-bg) !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 700 !important;
+}
+
+html body .duo-game-modal-host .ct-training-btn--ghost,
+html body .duo-game-modal-host .ct-fq-btn-ghost {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  border-radius: 999px !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+html body .duo-game-modal-host .ct-training-btn--warn {
+  background: var(--clay-terracotta) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 0 var(--clay-terracotta-deep) !important;
+  color: var(--clay-surface) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+html body .duo-game-modal-host .ct-play-results-card .ct-fq-sbig {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-navy) !important;
+}
+
+html body .duo-game-modal-host .ct-pp-pill.sel,
+html body .duo-game-modal-host .ct-pp-round.sel,
+html body .duo-game-modal-host .ct-pp-res-row.win {
+  background: rgba(47, 74, 109, 0.1) !important;
+  border-color: var(--clay-navy) !important;
+  border-bottom-color: var(--clay-navy-deep) !important;
+  color: var(--clay-navy) !important;
+}
+
+/* In-Game PlayHud, Timer Bar & Live Pieces */
+html body .duo-game-modal-host .ct-fq-bar,
+html body .duo-game-modal-host .ct-fq-bar-chip,
+html body .duo-game-modal-host .ct-fq-tb,
+html body .duo-game-modal-host .ct-fq-cd--ready,
+html body .duo-game-modal-host .ct-fq-cue-ready-label,
+html body .duo-game-modal-host .cx-rule,
+html body .duo-game-modal-host .cx-review,
+html body .duo-game-modal-host .cancellation-task-game .ct-fq-gs,
+html body .duo-game-modal-host .cx-atlas .ct-mot-instruction {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-ink) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-gv {
+  font-family: var(--clay-font-body) !important;
+  font-weight: 800 !important;
+  color: var(--clay-ink) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-gl {
+  font-family: var(--clay-font-body) !important;
+  font-weight: 600 !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-cbw {
+  background: var(--clay-surface-2) !important;
+  height: 10px !important;
+}
+
+html body .duo-game-modal-host .ct-fq-cb {
+  background: linear-gradient(90deg, var(--clay-sage) 0%, var(--clay-navy) 100%) !important;
+}
+
+html body .duo-game-modal-host .game2d-piece__art {
+  background: var(--clay-surface) !important;
+  border: 1.5px solid color-mix(in srgb, var(--game2d-piece-accent) 45%, #D6CFC1) !important;
+  border-bottom: 3px solid color-mix(in srgb, var(--game2d-piece-accent) 60%, #B8B0A2) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 10px rgba(27, 31, 36, 0.06) !important;
+}
+
+html body .duo-game-modal-host .cancellation-task-game .cb2d-check {
+  background: var(--clay-sage) !important;
+  border: 2px solid var(--clay-surface) !important;
+  box-shadow: 0 2px 0 var(--clay-sage-deep) !important;
+}
+
+html body .duo-game-modal-host .cancellation-task-game .game2d-piece[data-cleared='1'] .game2d-piece__art {
+  background: #E5ECE5 !important;
+  border-color: var(--clay-sage) !important;
+  border-bottom-color: var(--clay-sage-deep) !important;
+}
+
+/* Coach Bubble (DomCoach / CoachLayer) */
+html body .duo-game-modal-host .ct-coach-bubble {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: 0 14px 36px rgba(27, 31, 36, 0.14) !important;
+  color: var(--clay-ink) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-bubble-body p,
+html body .duo-game-modal-host .ct-coach-avatar-name {
+  font-family: var(--clay-font-body) !important;
+  color: var(--clay-ink) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-avatar-dot,
+html body .duo-game-modal-host .ct-coach-progress-seg.is-done,
+html body .duo-game-modal-host .ct-coach-progress-seg.is-active {
+  background: var(--clay-sage) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-mode-pill {
+  background: rgba(47, 74, 109, 0.09) !important;
+  border: 1px solid rgba(47, 74, 109, 0.2) !important;
+  color: var(--clay-navy) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-mode-pill--active {
+  background: rgba(181, 72, 47, 0.1) !important;
+  border-color: rgba(181, 72, 47, 0.28) !important;
+  color: var(--clay-terracotta) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-next {
+  background: var(--clay-navy) !important;
+  border: none !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  border-radius: 999px !important;
+  color: var(--clay-bg) !important;
+}
+
+/* Dark Studio Inside-Game Overrides */
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet.duo-mode-card,
+html[data-home-theme='dark'] body .duo-game-modal-host .cpp-help-card,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-survival-intro-body,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-pp-card,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-lv-select-card,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-play-results-card,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-training-modal,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-training-handoff,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-bar,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-bar-chip,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-tb,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-coach-bubble,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-sci-link--chip,
+html[data-home-theme='dark'] body .duo-game-modal-host .cpp-page .cpp-path .cpp-sub {
+  background: #1D232B !important;
+  border-color: rgba(242, 238, 230, 0.1) !important;
+  border-bottom-color: rgba(242, 238, 230, 0.1) !important;
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .cpp-page .ct-training-menubar {
+  background: rgba(20, 24, 30, 0.92) !important;
+  border-bottom-color: rgba(242, 238, 230, 0.08) !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet-name,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-survival-intro-title,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-pp-hero-title,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-lv-hero-title,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-play-results-title,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-gv,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-coach-bubble-body p,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-coach-avatar-name {
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet-hint,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-gl {
+  color: #B4AEA2 !important;
+}
+
+/* ── 15. ALL 18 GAMES — Complete Light Clay Studio Overrides ─────────────── */
+
+/* Level Path ? Help Button & Coach Targets & Coach Typography */
+html body .duo-game-modal-host .cpp-page .ct-training-menubar .ct-training-chrome-btn,
+html body .duo-game-modal-host .ct-training-menubar .ct-training-chrome-btn {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  color: var(--clay-navy) !important;
+  box-shadow: 0 4px 10px rgba(27, 31, 36, 0.06) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-target-pulse {
+  border-color: rgba(47, 74, 109, 0.65) !important;
+  box-shadow: 0 0 0 4px rgba(47, 74, 109, 0.14) !important;
+}
+
+html body .duo-game-modal-host .is-awaiting .ct-coach-target-pulse,
+html body .duo-game-modal-host .ct-coach-target-ripple {
+  border-color: var(--clay-navy) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-target-badge {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+  box-shadow: 0 4px 12px rgba(47, 74, 109, 0.28) !important;
+}
+
+html body .duo-game-modal-host .is-avoid .ct-coach-target-pulse {
+  border-color: var(--clay-terracotta) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-target-avoid-badge {
+  background: var(--clay-terracotta) !important;
+  color: var(--clay-surface) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-target-success {
+  background: rgba(138, 154, 140, 0.35) !important;
+  color: var(--clay-sage-deep) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-await-hint {
+  background: rgba(47, 74, 109, 0.07) !important;
+  border: 1px dashed rgba(47, 74, 109, 0.35) !important;
+  color: var(--clay-navy) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-step-pill,
+html body .duo-game-modal-host .ct-coach-skip {
+  font-family: var(--clay-font-body) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+html body .duo-game-modal-host .ct-coach-progress-seg {
+  background: var(--clay-surface-2) !important;
+}
+
+/* Strip chunky 4px-7px toy borders & bright colors across ALL 18 games */
+html body .duo-game-modal-host .cx-atlas h1,
+html body .duo-game-modal-host .cx-atlas h2,
+html body .duo-game-modal-host .cx-atlas h3,
+html body .duo-game-modal-host .cx-atlas [data-coach],
+html body .duo-game-modal-host .cx-atlas button {
+  font-family: var(--clay-font-body);
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-mot-instruction,
+html body .duo-game-modal-host .cx-atlas .ct-mot-play,
+html body .duo-game-modal-host .cx-atlas.c3d-root .c3d-hint,
+html body .duo-game-modal-host .cx-atlas.c3d-root .c3d-banner--over,
+html body .duo-game-modal-host .cx-atlas.c3d-root .c3d-cta--ghost,
+html body .duo-game-modal-host .cx-atlas.ct-pal3d-root .c3d-question,
+html body .duo-game-modal-host .cx-atlas.ct-pal3d-root .ct-pal-access-wrap,
+html body .duo-game-modal-host .cx-atlas.ct-pal3d-root .ct-pal-access-btn,
+html body .duo-game-modal-host .cx-atlas .ct-sm-legend,
+html body .duo-game-modal-host .cx-atlas .ct-sm-hud,
+html body .duo-game-modal-host .cx-atlas .ct-sm-card,
+html body .duo-game-modal-host .cx-atlas .ct-sm-key,
+html body .duo-game-modal-host .cx-atlas .ic-status,
+html body .duo-game-modal-host .cx-atlas .ic-field,
+html body .duo-game-modal-host .cx-atlas .ic-weapon,
+html body .duo-game-modal-host .cx-atlas .ic-panel,
+html body .duo-game-modal-host .cx-atlas .ct-sg-card,
+html body .duo-game-modal-host .cx-atlas .ct-sg-ask-card button[aria-pressed],
+html body .duo-game-modal-host .cx-atlas .ct-sg-watch-card button[aria-label],
+html body .duo-game-modal-host .cx-atlas .ct-kt-panel,
+html body .duo-game-modal-host .cx-atlas .ct-kt-stimulus,
+html body .duo-game-modal-host .cx-atlas .ct-kt-field input,
+html body .duo-game-modal-host .cx-atlas .ct-kt-mark,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-link-board,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-cell,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-link-cell,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-found-panel,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-clear-btn,
+html body .duo-game-modal-host .cx-atlas.synonyms-root [data-coach="prompt"] + div > div,
+html body .duo-game-modal-host .cx-atlas.synonyms-root [data-coach="answer"] button,
+html body .duo-game-modal-host .cx-atlas.trivia-root .trivia-qcard,
+html body .duo-game-modal-host .cx-atlas.trivia-root [data-coach="options"] button,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-board,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-hud,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-nudge-ovl,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-win-card,
+html body .duo-game-modal-host .cx-atlas .gk-card,
+html body .duo-game-modal-host .cx-atlas .gk-trav,
+html body .duo-game-modal-host .cx-atlas.ct-det-root [style*="min(100%, 480px)"],
+html body .duo-game-modal-host .cx-atlas.ct-det-root [data-coach="says"] button,
+html body .duo-game-modal-host .cx-atlas .ct-mw-pad,
+html body .duo-game-modal-host .cx-atlas .ct-mw-direction-btn,
+html body .duo-game-modal-host .cx-atlas .ct-ts-stim,
+html body .duo-game-modal-host .cx-atlas .ct-ts-key,
+html body .duo-game-modal-host .cx-atlas .ct-ts-over-card,
+html body .duo-game-modal-host .cx-atlas .ct-ss-card,
+html body .duo-game-modal-host .cx-atlas .ct-ss-rule,
+html body .duo-game-modal-host .cx-atlas .ct-ss-over-card {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+/* Display titles inside games */
+html body .duo-game-modal-host .cx-rule-name,
+html body .duo-game-modal-host .cx-rule-world-name,
+html body .duo-game-modal-host .cx-review-name,
+html body .duo-game-modal-host .cx-atlas .ct-mot-countdown-num,
+html body .duo-game-modal-host .c3d-countdown-val,
+html body .duo-game-modal-host .cx-atlas .ct-sg-title,
+html body .duo-game-modal-host .cx-atlas .ct-ts-over-title,
+html body .duo-game-modal-host .cx-atlas .ct-ss-over-title,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-win-title {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-navy) !important;
+}
+
+[dir='rtl'] html body .duo-game-modal-host .cx-rule-name,
+[dir='rtl'] html body .duo-game-modal-host .cx-rule-world-name,
+[dir='rtl'] html body .duo-game-modal-host .cx-review-name,
+[dir='rtl'] html body .duo-game-modal-host .cx-atlas .ct-sg-title,
+[dir='rtl'] html body .duo-game-modal-host .cx-atlas .ct-ts-over-title,
+[dir='rtl'] html body .duo-game-modal-host .cx-atlas .ct-ss-over-title,
+[dir='rtl'] html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-win-title {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+}
+
+/* Primary Clay Actions inside Games (Replaces #58cc02 lime green) */
+html body .duo-game-modal-host .cx-atlas.c3d-root .c3d-cta,
+html body .duo-game-modal-host .cx-atlas .gk-primary,
+html body .duo-game-modal-host .cx-atlas .ct-sg-ask-card button:not([aria-pressed]),
+html body .duo-game-modal-host .cx-atlas .ct-sg-root button:has(+ *):not([aria-pressed]),
+html body .duo-game-modal-host .cx-atlas .ct-sg-ask-card button:last-of-type:not([aria-pressed]),
+html body .duo-game-modal-host .cx-atlas .ct-sg-root > div > button:last-child {
+  background: var(--clay-navy) !important;
+  border: none !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  border-radius: 999px !important;
+  color: var(--clay-bg) !important;
+  box-shadow: 0 6px 16px rgba(47, 74, 109, 0.22) !important;
+}
+
+/* Selected / Active Clay States (Replaces #2586f7 & #ddf4ff) */
+html body .duo-game-modal-host .cx-atlas.ct-pal3d-root .ct-pal-access-btn:hover,
+html body .duo-game-modal-host .cx-atlas .ct-sm-key:active,
+html body .duo-game-modal-host .cx-atlas .ct-sm-key.ct-sm-key--press,
+html body .duo-game-modal-host .cx-atlas .ct-kt-stimulus.is-tracked,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-cell--selected,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-link-cell--active,
+html body .duo-game-modal-host .cx-atlas .gk-trav--picked,
+html body .duo-game-modal-host .cx-atlas .ct-mw-direction-btn:hover,
+html body .duo-game-modal-host .cx-atlas .ct-ts-key:active,
+html body .duo-game-modal-host .cx-atlas .ct-ss-card.is-picked {
+  background: rgba(47, 74, 109, 0.12) !important;
+  border-color: var(--clay-navy) !important;
+  border-bottom-color: var(--clay-navy) !important;
+  color: var(--clay-navy) !important;
+}
+
+/* Secondary / Neutral / Cue Clay Chips (Replaces #ff7800 / #ffc21c / #2586f7 badges) */
+html body .duo-game-modal-host .cx-atlas .ct-sm-legend-label,
+html body .duo-game-modal-host .cx-atlas .ct-sm-hud-time,
+html body .duo-game-modal-host .cx-atlas .ct-kt-wordcat,
+html body .duo-game-modal-host .cx-atlas .ct-kt-count,
+html body .duo-game-modal-host .cx-atlas .ct-ts-key small,
+html body .duo-game-modal-host .cx-atlas .ct-mw-count,
+html body .duo-game-modal-host .cx-atlas .ct-sm-legend-digit,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-link-draft,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-hud,
+html body .duo-game-modal-host .cx-atlas.rh-atlas-root .ct-rh-nudge-ovl {
+  color: var(--clay-navy) !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ic-combo,
+html body .duo-game-modal-host .cx-atlas .ct-sg-timer,
+html body .duo-game-modal-host .cx-atlas .ct-kt-cat--dim.is-active,
+html body .duo-game-modal-host .cx-atlas.trivia-root .topic-chip,
+html body .duo-game-modal-host .cx-atlas .gk-lens,
+html body .duo-game-modal-host .cx-atlas .ct-mw-cue {
+  background: rgba(181, 72, 47, 0.1) !important;
+  border: 1px solid rgba(181, 72, 47, 0.26) !important;
+  border-bottom: 1px solid rgba(181, 72, 47, 0.26) !important;
+  color: var(--clay-terracotta) !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-kt-cat,
+html body .duo-game-modal-host .cx-atlas.synonyms-root [data-coach="relation"],
+html body .duo-game-modal-host .cx-atlas .ct-ts-cue,
+html body .duo-game-modal-host .cx-atlas .ct-ss-pip {
+  background: rgba(47, 74, 109, 0.1) !important;
+  border: 1px solid rgba(47, 74, 109, 0.22) !important;
+  color: var(--clay-navy) !important;
+}
+
+html body .duo-game-modal-host .cx-atlas.ic-root {
+  --game-tower-a: #B5482F !important;
+  --game-tower-b: #2F4A6D !important;
+  --game-tower-c: #6E8571 !important;
+}
+
+/* Correct / Found Clay Chips (Muted Sage) */
+html body .duo-game-modal-host .cx-atlas .ct-kt-mark.ok,
+html body .duo-game-modal-host .cx-atlas.ct-wordle-root .ct-wordle-found-chip,
+html body .duo-game-modal-host .cx-atlas .gk-trav--in,
+html body .duo-game-modal-host .cx-atlas .gk-trav--right,
+html body .duo-game-modal-host .cx-atlas .ct-ss-rule.is-found {
+  background: #E4ECE4 !important;
+  border-color: var(--clay-sage) !important;
+  color: #3E5942 !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-ss-msg.is-good {
+  color: #3E5942 !important;
+}
+
+/* Wrong / Out Clay Chips (Terracotta) */
+html body .duo-game-modal-host .cx-atlas .gk-trav--out,
+html body .duo-game-modal-host .cx-atlas .gk-trav--wrong,
+html body .duo-game-modal-host .cx-atlas .ct-ss-rule.is-missed {
+  background: #F4E1DC !important;
+  border-color: var(--clay-terracotta) !important;
+  color: var(--clay-terracotta) !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-ss-msg.is-bad {
+  color: var(--clay-terracotta) !important;
+}
+
+/* ── 16. PUZZLE STUDIO — Pure Light Clay Studio (All 19 Puzzles) ────────── */
+.pz-studio-game,
+html[data-home-theme] .pz-studio-game,
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub),
+.ct-puzzle-screen--hub,
+.pz-studio--hub,
+.pz-studio--category {
+  background: var(--clay-bg) !important;
+  background-image: radial-gradient(
+    circle at 50% 0%,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(242, 238, 230, 0) 68%
+  ) !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+.pz-studio-stars,
+.pz-studio-nebula {
+  display: none !important;
+}
+
+.pz-studio-game .ct-training-menubar,
+.pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-menubar,
+.pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-play-header {
+  background: rgba(242, 238, 230, 0.92) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink) !important;
+}
+
+.pz-studio-game .ct-training-chrome-btn,
+.pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-chrome-btn {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: 0 3px 8px rgba(27, 31, 36, 0.06) !important;
+  color: var(--clay-ink) !important;
+  border-radius: 12px !important;
+}
+
+.pz-studio-game .ct-puzzle-hub-title,
+.pz-studio-game .ct-puzzle-win-title,
+.pz-studio-game .ct-training-modal-title,
+.pz-studio-game .ct-training-handoff-name {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: var(--clay-ink) !important;
+}
+
+[dir='rtl'] .pz-studio-game .ct-puzzle-hub-title,
+[dir='rtl'] .pz-studio-game .ct-puzzle-win-title,
+[dir='rtl'] .pz-studio-game .ct-training-modal-title,
+[dir='rtl'] .pz-studio-game .ct-training-handoff-name {
+  font-family: 'Cairo', var(--clay-font-display) !important;
+  font-weight: 900 !important;
+}
+
+.pz-studio-game .ct-puzzle-hub-kicker,
+.pz-studio-game .ct-puzzle-hub-sub,
+.pz-studio-game .ct-puzzle-win-meta {
+  color: var(--clay-ink-muted) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+/* Grid Size Picker: Replaces Cosmic Space Planets with Matte Clay Plinths */
+.pz-studio-game .ct-puzzle-grid-pick {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  border-radius: 20px !important;
+  color: var(--clay-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-grid-pick:hover {
+  border-color: rgba(47, 74, 109, 0.28) !important;
+  box-shadow: var(--clay-shadow-hover) !important;
+}
+
+.pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick-ic {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 6px 14px rgba(47, 74, 109, 0.2),
+    inset 0 2px 3px rgba(255, 255, 255, 0.22) !important;
+  text-shadow: none !important;
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+}
+
+.pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s4 .ct-puzzle-grid-pick-ic {
+  background: #5F7463 !important;
+}
+
+.pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s5 .ct-puzzle-grid-pick-ic {
+  background: #7B5E4B !important;
+}
+
+.pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s6 .ct-puzzle-grid-pick-ic {
+  background: var(--clay-terracotta) !important;
+}
+
+/* Puzzle Boards, Cells, Keypad, Tools & Win Banners (Zero #1a1208 / 4px offset shadows) */
+.pz-studio-game .ct-puzzle-list-item,
+.pz-studio-game .ct-puzzle-grid,
+.pz-studio-game .ct-slide-board,
+.pz-studio-game .ct-bridges-svg,
+.pz-studio-game .ct-crowns-grid,
+.pz-studio-game .ct-flow-board,
+.pz-studio-game .ct-tangram-board,
+.pz-studio-game .ct-puzzle-win,
+.pz-studio-game .mm-tut-card,
+.pz-studio-game .ct-training-modal,
+.pz-studio-game .ct-training-handoff,
+.pz-studio-game .gc-card {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: var(--clay-shadow) !important;
+  border-radius: 20px !important;
+  color: var(--clay-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell,
+.pz-studio-game .ct-slide-tile,
+.pz-studio-game .ct-puzzle-numkey,
+.pz-studio-game .ct-tangram-piece,
+.pz-studio-game .ct-puzzle-tool-btn,
+.pz-studio-game .gc-btn {
+  background: var(--clay-surface) !important;
+  border: 1px solid rgba(27, 31, 36, 0.12) !important;
+  box-shadow: 0 2px 5px rgba(27, 31, 36, 0.05) !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--takuzu-fixed,
+.pz-studio-game .ct-puzzle-cell--kakuro-given,
+.pz-studio-game .ct-puzzle-cell--given {
+  background: var(--clay-surface-2) !important;
+  color: var(--clay-ink) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--selected {
+  background: rgba(47, 74, 109, 0.14) !important;
+  border-color: var(--clay-navy) !important;
+  box-shadow: inset 0 0 0 2px var(--clay-navy) !important;
+}
+
+.pz-studio-game .ct-puzzle-cell--player {
+  background: rgba(47, 74, 109, 0.08) !important;
+  color: var(--clay-navy) !important;
+}
+
+.pz-studio-game .ct-puzzle-tool-btn--pri,
+.pz-studio-game .ct-nonogram-tool--active,
+.pz-studio-game .ct-training-btn--pri,
+.pz-studio-game .mm-tut-btn--pri,
+.pz-studio-game .gc-btn--pri {
+  background: var(--clay-navy) !important;
+  border: none !important;
+  border-bottom: 3px solid var(--clay-navy-deep) !important;
+  color: var(--clay-bg) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 6px 14px rgba(47, 74, 109, 0.2) !important;
+}
+
+.pz-studio-game .ct-puzzle-tool-btn--hint {
+  background: rgba(138, 154, 140, 0.18) !important;
+  border: 1px solid rgba(138, 154, 140, 0.35) !important;
+  color: var(--clay-navy) !important;
+  border-radius: 999px !important;
+}
+
+.pz-studio-game .ct-training-btn--ghost,
+.pz-studio-game .mm-tut-btn--ghost {
+  background: var(--clay-bg) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-ink) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.pz-studio-game .ct-puzzle-win-badge {
+  background: var(--clay-sage) !important;
+  color: var(--clay-surface) !important;
+  border: none !important;
+  box-shadow: 0 6px 14px rgba(138, 154, 140, 0.26) !important;
+}
+
+/* Block Burst Board -> Warm Matte Clay Board */
+.pz-studio-game .bb-board {
+  background: var(--clay-surface-2) !important;
+  border: 1px solid var(--clay-border) !important;
+  box-shadow: inset 0 2px 8px rgba(27, 31, 36, 0.08) !important;
+}
+
+.pz-studio-game .bb-score {
+  background: var(--clay-surface) !important;
+  border: 1px solid var(--clay-border) !important;
+  color: var(--clay-navy) !important;
+}
+
+.pz-studio-game .bb-over {
+  background: rgba(242, 238, 230, 0.92) !important;
+  color: var(--clay-ink) !important;
+}
+
+/* Group Challenge & Onboarding Modal (.mm-tut-*) */
+.pz-studio-game.pz-theme-group .gc-head {
+  background: var(--clay-surface) !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+}
+
+.pz-studio-game.pz-theme-group .gc-handoff-card--secret {
+  background: var(--clay-navy) !important;
+  color: var(--clay-bg) !important;
+}
+
+.pz-studio-game .gc-btn--ok {
+  background: var(--clay-sage) !important;
+  color: var(--clay-surface) !important;
+  border: none !important;
+}
+
+.pz-studio-game .mm-tut-step-badge,
+.pz-studio-game .mm-tut-ready-badge,
+.pz-studio-game .mm-tut-practice-free-hint {
+  background: rgba(47, 74, 109, 0.1) !important;
+  color: var(--clay-navy) !important;
+  border-color: rgba(47, 74, 109, 0.2) !important;
+}
+
+.pz-studio-game .mm-tut-progress-seg.is-done,
+.pz-studio-game .mm-tut-progress-seg.is-active {
+  background: var(--clay-navy) !important;
+}
+
+/* ============================================================================
+ * 17. WORLD OF CLAY — Studio Background Assets, 3D Cushion Materiality &
+ *     Cognitive Training Pod Controls
+ * ============================================================================ */
+
+/* A. Rendered 3D Light Clay Studio Backgrounds on Shell & Game Stages */
+.nayzak-page {
+  background-color: var(--clay-bg) !important;
+  background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-studio-desktop.webp") !important;
+  background-size: cover !important;
+  background-position: center bottom !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+}
+
+@media (max-width: 767px) {
+  .nayzak-page {
+    background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-studio-mobile.webp") !important;
+  }
+}
+
+html[data-home-theme='dark'] .nayzak-page {
+  background-color: var(--clay-bg) !important;
+  background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-studio-dark-desktop.webp") !important;
+}
+
+@media (max-width: 767px) {
+  html[data-home-theme='dark'] .nayzak-page {
+    background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-studio-dark-mobile.webp") !important;
+  }
+}
+
+/* Inside-Game & Inside-Puzzle Sculpted Clay Tabletop Backdrop */
+html body .ct-domain-game-stage::before {
+  background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-game-stage.webp") !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.96 !important;
+  filter: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+html[data-home-theme='dark'] body .ct-domain-game-stage::before {
+  background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-game-stage-dark.webp") !important;
+}
+
+html[data-home-theme] .pz-studio-game,
+html[data-home-theme] .pz-studio-game > .ct-puzzle-screen,
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub,
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--play,
+html[data-home-theme] .pz-studio--hub,
+html[data-home-theme] .pz-studio--category {
+  background-color: var(--clay-bg) !important;
+  background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-game-stage.webp") !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game,
+html[data-home-theme='dark'] .pz-studio-game > .ct-puzzle-screen,
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-screen--hub,
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-screen--play,
+html[data-home-theme='dark'] .pz-studio--hub,
+html[data-home-theme='dark'] .pz-studio--category {
+  background-image: url("/the-maze-man-comics/Assets/brand/clay-2026/bg-game-stage-dark.webp") !important;
+}
+
+/* B. Tactile 3D Polymer Clay Cushion Depth (Eliminates Flat/Magazine Feel) */
+.lum-hero-card--nayzak,
+.lum-module-card,
+.lum-domain-card--illustrated,
+.nayzak-welcome-card {
+  background: linear-gradient(170deg, rgba(252, 250, 246, 0.96) 0%, rgba(244, 239, 230, 0.96) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow:
+    0 14px 32px rgba(27, 31, 36, 0.08),
+    0 3px 8px rgba(27, 31, 36, 0.05),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 8px rgba(176, 165, 146, 0.22) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+html[data-home-theme='dark'] .lum-hero-card--nayzak,
+html[data-home-theme='dark'] .lum-module-card,
+html[data-home-theme='dark'] .lum-domain-card--illustrated,
+html[data-home-theme='dark'] .nayzak-welcome-card {
+  background: linear-gradient(170deg, rgba(46, 51, 59, 0.96) 0%, rgba(35, 39, 46, 0.96) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.34),
+    inset 0 1px 2px rgba(255, 255, 255, 0.12),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+.nayzak-header,
+.nayzak-rail,
+.nayzak-tabbar {
+  background: rgba(250, 248, 244, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  box-shadow:
+    0 8px 24px rgba(27, 31, 36, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+html[data-home-theme='dark'] .nayzak-header,
+html[data-home-theme='dark'] .nayzak-rail,
+html[data-home-theme='dark'] .nayzak-tabbar {
+  background: rgba(34, 38, 44, 0.9) !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Sculpted Clay Interactive Drill Rows */
+.lum-playlist-row,
+.lum-mini-row {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F1E9 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 5px 14px rgba(27, 31, 36, 0.06),
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -3px 5px rgba(176, 165, 146, 0.18) !important;
+  transition: transform 160ms ease, box-shadow 160ms ease !important;
+}
+
+.lum-playlist-row.is-next {
+  background: linear-gradient(180deg, #FFFFFF 0%, #EFECE5 100%) !important;
+  border-color: rgba(47, 74, 109, 0.25) !important;
+  box-shadow:
+    0 8px 20px rgba(47, 74, 109, 0.12),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -3px 6px rgba(47, 74, 109, 0.1) !important;
+}
+
+.lum-playlist-row:hover,
+.lum-mini-row:hover {
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 10px 22px rgba(47, 74, 109, 0.11),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -3px 5px rgba(176, 165, 146, 0.2) !important;
+}
+
+html[data-home-theme='dark'] .lum-playlist-row,
+html[data-home-theme='dark'] .lum-mini-row {
+  background: linear-gradient(180deg, #323741 0%, #272B33 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.28),
+    inset 0 1px 2px rgba(255, 255, 255, 0.08),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.32) !important;
+}
+
+/* Cognitive Training Telemetry & Sculpted Clay Pills */
+.clay-readiness-bar {
+  width: 100%;
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: rgba(27, 31, 36, 0.08);
+  box-shadow: inset 0 2px 4px rgba(27, 31, 36, 0.12);
+  overflow: hidden;
+}
+
+html[data-home-theme='dark'] .clay-readiness-bar {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.clay-readiness-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #98A99A 0%, #738676 100%);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.38);
+  transition: width 260ms ease;
+}
+
+.clay-row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.clay-dur-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(47, 74, 109, 0.09);
+  color: var(--clay-navy);
+  font-family: var(--clay-font-body);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+html[data-home-theme='dark'] .clay-dur-chip {
+  background: rgba(242, 238, 230, 0.12);
+  color: var(--clay-ink);
+}
+
+.clay-drill-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #EFEAE0;
+  color: var(--clay-ink);
+  font-family: var(--clay-font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow:
+    0 3px 8px rgba(27, 31, 36, 0.08),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.09);
+  white-space: nowrap;
+}
+
+.clay-drill-cta.is-next {
+  background: linear-gradient(180deg, #3A5982 0%, #2F4A6D 100%);
+  color: #FAF8F4;
+  box-shadow:
+    0 6px 14px rgba(47, 74, 109, 0.24),
+    inset 0 2px 2px rgba(255, 255, 255, 0.24),
+    inset 0 -3px 4px rgba(15, 28, 46, 0.35);
+}
+
+html[data-home-theme='dark'] .clay-drill-cta:not(.is-next) {
+  background: #363C47;
+  color: var(--clay-ink);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.clay-skill-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.clay-npi-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(47, 74, 109, 0.11);
+  color: var(--clay-navy);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.clay-band-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(138, 154, 140, 0.18);
+  color: #485B4A;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+html[data-home-theme='dark'] .clay-npi-chip {
+  background: rgba(124, 157, 200, 0.16);
+  color: #B4CBE8;
+}
+
+html[data-home-theme='dark'] .clay-band-chip {
+  background: rgba(138, 154, 140, 0.22);
+  color: #C7D6C8;
+}
+
+.clay-card-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3A5982 0%, #2F4A6D 100%);
+  color: #FAF8F4 !important;
+  font-family: var(--clay-font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow:
+    0 5px 12px rgba(47, 74, 109, 0.22),
+    inset 0 2px 2px rgba(255, 255, 255, 0.25),
+    inset 0 -3px 4px rgba(15, 28, 46, 0.35);
+  white-space: nowrap;
+}
+
+.clay-card-pill-btn--wide {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+}
+
+.clay-count-chip {
+  min-width: 34px;
+  height: 30px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #EFEAE0;
+  color: var(--clay-navy);
+  font-family: var(--clay-font-display);
+  font-size: 0.82rem;
+  box-shadow:
+    0 2px 6px rgba(27, 31, 36, 0.08),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.08);
+}
+
+html[data-home-theme='dark'] .clay-count-chip {
+  background: #363C47;
+  color: var(--clay-ink);
+}
+
+/* Tighten Domain & Puzzle Card Artwork Stage so they read as Training Modules */
+.lum-card-stage {
+  height: 132px !important;
+  min-height: 132px !important;
+  border-bottom: 1px solid var(--clay-border) !important;
+  box-shadow: inset 0 -6px 14px rgba(27, 31, 36, 0.05) !important;
+}
+
+.lum-primary-cta {
+  background: linear-gradient(180deg, #3A5982 0%, #2F4A6D 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(47, 74, 109, 0.28),
+    inset 0 2px 3px rgba(255, 255, 255, 0.25),
+    inset 0 -4px 6px rgba(14, 26, 44, 0.42) !important;
+}
+
+/* C. Bug Fix: Cancellation Results Mark (Remove Cartoon Comet & Show Clay Token) */
+html body .duo-game-modal-host .cx-atlas .ct-play-results-mark {
+  background-image: none !important;
+  width: 68px !important;
+  height: 68px !important;
+  border-radius: 50% !important;
+  font-size: 28px !important;
+  line-height: 68px !important;
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 auto 14px !important;
+  box-shadow:
+    0 8px 18px rgba(27, 31, 36, 0.14),
+    inset 0 2px 4px rgba(255, 255, 255, 0.35),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.14) !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-play-results-card--success .ct-play-results-mark {
+  background: var(--clay-sage) !important;
+  color: #FAF8F4 !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-play-results-card--retry .ct-play-results-mark {
+  background: var(--clay-terracotta) !important;
+  color: #FAF8F4 !important;
+}
+
+html body .duo-game-modal-host .cx-atlas .ct-play-results-card--neutral .ct-play-results-mark {
+  background: var(--clay-navy) !important;
+  color: #FAF8F4 !important;
+}
+
+/* D. Bug Fix: Training Exit/Pause Modals (Full Contrast Light & Dark Clay) */
+html body .duo-game-modal-host .ct-training-ov {
+  background: rgba(27, 31, 36, 0.56) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+html body .duo-game-modal-host .ct-training-modal {
+  background: linear-gradient(175deg, #FCFBF8 0%, #EFEAE0 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1.5px solid rgba(176, 165, 146, 0.45) !important;
+  border-radius: 26px !important;
+  box-shadow:
+    0 24px 52px rgba(27, 31, 36, 0.24),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 8px rgba(176, 165, 146, 0.24) !important;
+  color: #1B1F24 !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-training-modal {
+  background: linear-gradient(175deg, #2D323B 0%, #22262E 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  color: #F2EEE6 !important;
+}
+
+html body .duo-game-modal-host .ct-training-modal-title {
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+  color: #1B1F24 !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-training-modal-title {
+  color: #F2EEE6 !important;
+}
+
+html body .duo-game-modal-host .ct-training-modal-text {
+  font-family: var(--clay-font-body) !important;
+  font-weight: 600 !important;
+  color: #5C6066 !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-training-modal-text {
+  color: #B4B0A8 !important;
+}
+
+html body .duo-game-modal-host .ct-training-btn--pri,
+html body .duo-game-modal-host .ct-training-btn--start,
+html body .duo-game-modal-host .ct-fq-btn-pri {
+  background: linear-gradient(180deg, #3A5982 0%, #2F4A6D 100%) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow:
+    0 6px 14px rgba(47, 74, 109, 0.24),
+    inset 0 2px 2px rgba(255, 255, 255, 0.24),
+    inset 0 -3px 4px rgba(15, 28, 46, 0.35) !important;
+  color: #FAF8F4 !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 800 !important;
+}
+
+html body .duo-game-modal-host .ct-training-btn--warn {
+  background: linear-gradient(180deg, #C7573D 0%, #B5482F 100%) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow:
+    0 6px 14px rgba(181, 72, 47, 0.24),
+    inset 0 2px 2px rgba(255, 255, 255, 0.24),
+    inset 0 -3px 4px rgba(96, 30, 16, 0.35) !important;
+  color: #FAF8F4 !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 800 !important;
+}
+
+html body .duo-game-modal-host .ct-training-btn--ghost,
+html body .duo-game-modal-host .ct-fq-btn-ghost {
+  background: #EFEAE0 !important;
+  border: 1px solid rgba(27, 31, 36, 0.14) !important;
+  border-bottom: 1px solid rgba(27, 31, 36, 0.14) !important;
+  border-radius: 999px !important;
+  box-shadow:
+    0 3px 8px rgba(27, 31, 36, 0.08),
+    inset 0 2px 2px rgba(255, 255, 255, 0.85),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.06) !important;
+  color: #1B1F24 !important;
+  font-family: var(--clay-font-body) !important;
+  font-weight: 800 !important;
+}
+
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-training-btn--ghost,
+html[data-home-theme='dark'] body .duo-game-modal-host .ct-fq-btn-ghost {
+  background: #363C47 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #F2EEE6 !important;
+}
+
+/* E. Bug Fix: Puzzle Hub GridSizePicker & Sudoku Board Cool-Blue / #1a1208 Seams */
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-picks {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 18px 14px !important;
+  border-radius: 22px !important;
+  background: linear-gradient(170deg, rgba(252, 250, 246, 0.96) 0%, rgba(242, 237, 228, 0.96) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow:
+    0 12px 26px rgba(27, 31, 36, 0.09),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 6px rgba(176, 165, 146, 0.2) !important;
+  color: var(--clay-ink) !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick {
+  background: linear-gradient(170deg, #323741 0%, #262A32 100%) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.34),
+    inset 0 1px 2px rgba(255, 255, 255, 0.09) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick-ic {
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 20px !important;
+  background: var(--clay-navy) !important;
+  box-shadow:
+    0 8px 16px rgba(27, 31, 36, 0.16),
+    inset 0 3px 5px rgba(255, 255, 255, 0.28),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.22) !important;
+  color: #FAF8F4 !important;
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s3 .ct-puzzle-grid-pick-ic {
+  background: var(--clay-navy) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s4 .ct-puzzle-grid-pick-ic {
+  background: #6E8271 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s5 .ct-puzzle-grid-pick-ic {
+  background: #8B6F56 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick--s6 .ct-puzzle-grid-pick-ic {
+  background: var(--clay-terracotta) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick-lb {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 2px 10px !important;
+  overflow: visible !important;
+  clip-path: none !important;
+  white-space: nowrap !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(27, 31, 36, 0.08) !important;
+  background: #EFEAE0 !important;
+  color: var(--clay-ink) !important;
+  font-family: var(--clay-font-body) !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick-lb {
+  background: #363C47 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--clay-ink) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-screen--hub .ct-puzzle-grid-pick-hint {
+  color: var(--clay-ink-muted) !important;
+  font-family: var(--clay-font-body) !important;
+}
+
+/* Sudoku & Puzzle Play Screens: Replace Cool-Blue / #1a1208 Borders with Tactile Warm Clay */
+html[data-home-theme] .pz-studio-game .ct-puzzle-hint {
+  background: rgba(250, 248, 244, 0.92) !important;
+  border: 1px solid rgba(27, 31, 36, 0.1) !important;
+  border-radius: 16px !important;
+  color: var(--clay-ink-muted) !important;
+  box-shadow:
+    0 4px 12px rgba(27, 31, 36, 0.06),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.9) !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-hint {
+  background: rgba(45, 50, 59, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--clay-ink-muted) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-grid,
+html[data-home-theme] .pz-studio-game .ct-puzzle-grid--sudoku,
+html[data-home-theme] .pz-studio-game .ct-slide-board,
+html[data-home-theme] .pz-studio-game .ct-bridges-svg,
+html[data-home-theme] .pz-studio-game .ct-crowns-grid,
+html[data-home-theme] .pz-studio-game .ct-flow-board,
+html[data-home-theme] .pz-studio-game .ct-tangram-board {
+  background: #E2DBD0 !important;
+  border: 1.5px solid rgba(27, 31, 36, 0.14) !important;
+  border-radius: 22px !important;
+  box-shadow:
+    0 14px 32px rgba(27, 31, 36, 0.12),
+    inset 0 2px 3px rgba(255, 255, 255, 0.6) !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-grid,
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-grid--sudoku {
+  background: #1C1F26 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell,
+html[data-home-theme] .pz-studio-game .ct-puzzle-numkey,
+html[data-home-theme] .pz-studio-game .ct-slide-tile,
+html[data-home-theme] .pz-studio-game .ct-tangram-piece {
+  background: linear-gradient(180deg, #FCFBF8 0%, #F1ECE3 100%) !important;
+  border: 1px solid rgba(27, 31, 36, 0.12) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 2px 5px rgba(27, 31, 36, 0.08),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.92),
+    inset 0 -2px 3px rgba(176, 165, 146, 0.18) !important;
+  color: #1B1F24 !important;
+  font-family: var(--clay-font-display) !important;
+  font-weight: 400 !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-cell,
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-numkey {
+  background: linear-gradient(180deg, #353A44 0%, #292E37 100%) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #F2EEE6 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell--fixed,
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell--given {
+  background: linear-gradient(180deg, #E8E2D7 0%, #DED7CA 100%) !important;
+  color: #2F4A6D !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-cell--fixed,
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-cell--given {
+  background: #232730 !important;
+  color: #A7C2E4 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell--selected {
+  background: rgba(47, 74, 109, 0.18) !important;
+  outline: 2.5px solid #2F4A6D !important;
+  outline-offset: -2px !important;
+}
+
+/* F. Tactile 3D Clay Inside-Game Tiles & Cards */
+html body .duo-game-modal-host .ct-sm-card,
+html body .duo-game-modal-host .ct-sm-key,
+html body .duo-game-modal-host .ct-fq-card,
+html body .duo-game-modal-host .ct-fq-tile {
+  border-radius: 18px !important;
+  box-shadow:
+    0 10px 22px rgba(27, 31, 36, 0.11),
+    inset 0 2px 3px rgba(255, 255, 255, 0.85),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* G. Final Seam Polish: Remove legacy global.css::before pale-blue veil & hub header bar */
+html[data-home-theme] .ct-puzzle-screen--play::before {
+  display: none !important;
+  background-image: none !important;
+}
+
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-menubar,
+html[data-home-theme] .pz-studio-game:has(.ct-puzzle-screen--hub) .ct-training-play-header,
+html[data-home-theme] .pz-studio-game .ct-training-menubar,
+html[data-home-theme] .pz-studio-game .ct-training-play-header {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  color: var(--clay-ink) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-keypad {
+  gap: 6px !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-numkey {
+  min-width: 42px !important;
+  background: linear-gradient(180deg, #FCFBF8 0%, #EFEAE0 100%) !important;
+  border: 1px solid rgba(27, 31, 36, 0.12) !important;
+  color: #1B1F24 !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-numkey {
+  background: linear-gradient(180deg, #353A44 0%, #292E37 100%) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #F2EEE6 !important;
+}
+
+/* Ensure crisp heading contrast above 3D studio props on narrow viewports */
+.lum-top-bar,
+.lum-catalog-header,
+.nayzak-tab-hero {
+  background: rgba(250, 248, 244, 0.84) !important;
+  backdrop-filter: blur(10px) !important;
+  padding: 14px 18px !important;
+  border-radius: 22px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 8px 22px rgba(27, 31, 36, 0.08), inset 0 -3px 5px rgba(176, 165, 146, 0.16) !important;
+}
+
+html[data-home-theme='dark'] .lum-top-bar,
+html[data-home-theme='dark'] .lum-catalog-header,
+html[data-home-theme='dark'] .nayzak-tab-hero {
+  background: rgba(34, 38, 44, 0.86) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* ============================================================================
+ * 18. ULTRA GOD-MODE POLYMER CLAY — Interactive 3D Hero, Gamified Colors &
+ *     Animations, and Full Inside-Game / Puzzle Materiality & Specificity Fixes
+ * ============================================================================ */
+
+/* A. Keyframe Library — Crisp Spring, Shimmer & Celebration Motion */
+@keyframes clayShineSweep {
+  0% { transform: translateX(-140%) skewX(-20deg); }
+  45%, 100% { transform: translateX(240%) skewX(-20deg); }
+}
+
+@keyframes clayPipPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(46, 94, 168, 0.36); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(46, 94, 168, 0); }
+}
+
+@keyframes clayPopBounce {
+  0% { opacity: 0; transform: scale(0.55) translateY(10px); }
+  65% { opacity: 1; transform: scale(1.08) translateY(-3px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes clayFloatIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* B. Interactive 3D Clay Hero Diorama + Gamified Today Console */
+.clay-hero-diorama {
+  position: relative !important;
+  overflow: hidden !important;
+  background: radial-gradient(circle at 50% 42%, #FFFFFF 0%, #EFE9DC 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.94) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 12px 26px rgba(27, 31, 36, 0.1),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -5px 10px rgba(176, 165, 146, 0.24) !important;
+}
+
+.clay-hero-3d-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 126px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.clay-hero-3d-wrap:hover {
+  transform: scale(1.04);
+}
+
+.clay-hero-3d-wrap:active {
+  transform: scale(0.95);
+}
+
+.clay-hero-3d-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 126px;
+}
+
+.clay-quest-pips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.clay-quest-pip {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--clay-font-display);
+  font-size: 0.78rem;
+  background: #EFE9DD;
+  color: #5C6066;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 4px 10px rgba(27, 31, 36, 0.1),
+    inset 0 2px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 4px rgba(160, 148, 128, 0.22);
+}
+
+.clay-quest-pip.is-next {
+  background: var(--pip-color, #2E5EA8);
+  color: #FAF8F4;
+  animation: clayPipPulse 2s ease-in-out infinite;
+}
+
+.clay-quest-pip.is-done {
+  background: #4D8F68;
+  color: #FAF8F4;
+  box-shadow: 0 4px 10px rgba(77, 143, 104, 0.28);
+}
+
+.clay-quest-bonus-chip {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #FDF3DF;
+  color: #B37714;
+  border: 1.5px solid rgba(227, 161, 43, 0.35);
+  font-family: var(--clay-font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  box-shadow: 0 3px 8px rgba(227, 161, 43, 0.15);
+}
+
+.clay-dom-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--clay-font-body);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Tactile Pressable Spring Action & Shimmer Sweep */
+.lum-primary-cta {
+  position: relative !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, #3D70BF 0%, #2E5EA8 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(46, 94, 168, 0.30),
+    inset 0 2px 3px rgba(255, 255, 255, 0.32),
+    inset 0 -5px 6px rgba(16, 36, 68, 0.42) !important;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease !important;
+}
+
+.lum-primary-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  animation: clayShineSweep 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.lum-primary-cta:hover {
+  transform: translateY(-2px) scale(1.01) !important;
+}
+
+.lum-primary-cta:active,
+.clay-card-pill-btn:active,
+.clay-drill-cta:active {
+  transform: translateY(3px) scale(0.97) !important;
+}
+
+.clay-drill-cta.is-next {
+  box-shadow:
+    0 7px 14px rgba(27, 31, 36, 0.18),
+    inset 0 2px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* C. Vibrant Multi-Hued Inside-Game Chrome, ModeHub & PlanetPath */
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet.duo-mode-card {
+  background: linear-gradient(175deg, #FCFBF8 0%, #EFE9DD 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.94) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 12px 26px rgba(27, 31, 36, 0.11),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 7px rgba(176, 165, 146, 0.22) !important;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 180ms ease !important;
+}
+
+html body .duo-game-modal-host .ct-mph.duo-mode-hub .ct-mph-planet.duo-mode-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow:
+    0 18px 34px rgba(46, 94, 168, 0.16),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 7px rgba(176, 165, 146, 0.22) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap {
+  border-radius: 16px !important;
+  box-shadow:
+    0 8px 16px rgba(27, 31, 36, 0.18),
+    inset 0 2px 3px rgba(255, 255, 255, 0.35),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.22) !important;
+}
+
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--levels { background: #2E5EA8 !important; }
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--free   { background: #D95A3D !important; }
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--chal   { background: #4D8F68 !important; }
+html body .duo-game-modal-host .duo-mode-icon-wrap.duo-mode--proto3d { background: #E3A12B !important; }
+
+html body .duo-game-modal-host .duo-mode-play-pill {
+  background: linear-gradient(180deg, #3D70BF 0%, #2E5EA8 100%) !important;
+  color: #FAF8F4 !important;
+  border-radius: 999px !important;
+  padding: 7px 14px !important;
+  font-weight: 800 !important;
+  box-shadow:
+    0 5px 12px rgba(46, 94, 168, 0.24),
+    inset 0 2px 2px rgba(255, 255, 255, 0.28),
+    inset 0 -3px 4px rgba(15, 34, 64, 0.34) !important;
+}
+
+/* Vibrant PlanetPath Level Nodes & Trail */
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node .cpp-orb {
+  background: linear-gradient(180deg, #FCFBF8 0%, #EAE3D5 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 10px 20px rgba(27, 31, 36, 0.12),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 7px rgba(160, 148, 128, 0.25) !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--current .cpp-orb {
+  background: linear-gradient(180deg, #3D70BF 0%, #2E5EA8 100%) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  animation: clayPipPulse 2.2s ease-in-out infinite !important;
+}
+
+html body .duo-game-modal-host .cpp-page .cpp-path .cpp-node.cpp-node--done .cpp-orb {
+  background: linear-gradient(180deg, #5FA57B 0%, #4D8F68 100%) !important;
+  border-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Inside-Game HUD Shelf, Recessed Timer Track, & Bouncy Results Card */
+html body .duo-game-modal-host .ct-fq-bar,
+html body .duo-game-modal-host .ct-mot-instruction {
+  background: linear-gradient(180deg, #FCFBF8 0%, #F1ECE2 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.94) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 10px 24px rgba(27, 31, 36, 0.10),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -3px 6px rgba(176, 165, 146, 0.22) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-bar-chip,
+html body .duo-game-modal-host .ct-fq-gs {
+  background: #EFE9DC !important;
+  border: 1px solid rgba(255, 255, 255, 0.78) !important;
+  border-radius: 14px !important;
+  min-width: 56px !important;
+  padding: 6px 10px !important;
+  box-shadow:
+    inset 0 2px 4px rgba(160, 148, 128, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Cancellation Sculpted Clay Board Tray */
+html body .duo-game-modal-host .cancellation-task-game .cb2d-grid {
+  background: linear-gradient(175deg, #FCFBF8 0%, #EFE9DD 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.94) !important;
+  border-radius: 26px !important;
+  padding: 14px !important;
+  box-shadow:
+    0 16px 34px rgba(27, 31, 36, 0.11),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -5px 10px rgba(176, 165, 146, 0.22) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-cbw {
+  background: #E2DBD0 !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 2px 4px rgba(27, 31, 36, 0.15) !important;
+}
+
+html body .duo-game-modal-host .ct-fq-cb {
+  background: linear-gradient(90deg, #2E5EA8 0%, #4D8F68 60%, #E3A12B 100%) !important;
+  border-radius: 999px !important;
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.35) !important;
+}
+
+html body .duo-game-modal-host .ct-play-results-card {
+  background: linear-gradient(175deg, #FCFBF8 0%, #EFE9DD 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 28px !important;
+  box-shadow:
+    0 24px 54px rgba(27, 31, 36, 0.16),
+    inset 0 3px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -6px 10px rgba(176, 165, 146, 0.24) !important;
+}
+
+html body .duo-game-modal-host .ct-play-results-mark {
+  animation: clayPopBounce 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+html body .duo-game-modal-host .ct-play-results-stat {
+  background: #F4EFE6 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 5px 12px rgba(27, 31, 36, 0.06),
+    inset 0 -3px 5px rgba(176, 165, 146, 0.16) !important;
+}
+
+/* Tactile Polymer Clay Inside-Game Controls (Speed Match, Sort Shift, Keep Track, etc.) */
+html body .duo-game-modal-host .ct-sm-card,
+html body .duo-game-modal-host .ct-ss-card,
+html body .duo-game-modal-host .ct-kt-panel,
+html body .duo-game-modal-host .ct-fq-card,
+html body .duo-game-modal-host .ct-lv-select-card,
+html body .duo-game-modal-host .ct-fq-diffcard,
+html body .duo-game-modal-host .ct-pp-card {
+  background: linear-gradient(175deg, #FCFBF8 0%, #EFE9DD 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 24px !important;
+  box-shadow:
+    0 14px 32px rgba(27, 31, 36, 0.11),
+    inset 0 2px 4px rgba(255, 255, 255, 0.95),
+    inset 0 -5px 8px rgba(176, 165, 146, 0.22) !important;
+}
+
+html body .duo-game-modal-host .ct-sm-key {
+  background: linear-gradient(180deg, #FCFBF8 0%, #E9E2D4 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-radius: 18px !important;
+  font-family: var(--clay-font-display) !important;
+  color: #2E5EA8 !important;
+  box-shadow:
+    0 8px 16px rgba(27, 31, 36, 0.12),
+    inset 0 2px 3px rgba(255, 255, 255, 0.95),
+    inset 0 -4px 6px rgba(160, 148, 128, 0.28) !important;
+  transition: transform 110ms ease, box-shadow 110ms ease !important;
+}
+
+html body .duo-game-modal-host .ct-sm-key:active,
+html body .duo-game-modal-host .ct-sm-key.ct-sm-key--press {
+  transform: translateY(3px) scale(0.95) !important;
+  background: linear-gradient(180deg, #3D70BF 0%, #2E5EA8 100%) !important;
+  color: #FAF8F4 !important;
+}
+
+html body .duo-game-modal-host .ct-sm-legend-pair {
+  background: #F4EFE6 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 5px 12px rgba(27, 31, 36, 0.08) !important;
+}
+
+/* D. CRITICAL PUZZLE BUG FIXES (Square Sudoku Rows, Takuzu/Hitori/Kakuro/Nonogram States, BlockBurst Contrast) */
+html[data-home-theme] .pz-studio-game .ct-puzzle-grid,
+html[data-home-theme] .pz-studio-game .ct-puzzle-grid--sudoku {
+  grid-auto-rows: 1fr !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-grid--sudoku {
+  background: #CEC5B6 !important;
+  padding: 6px !important;
+  gap: 2.5px !important;
+  border: 2px solid rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-home-theme='dark'] .pz-studio-game .ct-puzzle-grid--sudoku {
+  background: #1B1E24 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Restore Takuzu (0/1), Nonogram (filled), Hitori (shaded), Kakuro (block) States */
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell.ct-puzzle-cell--t0 {
+  background: linear-gradient(180deg, #3D70BF 0%, #2E5EA8 100%) !important;
+  color: #FAF8F4 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 10px rgba(46, 94, 168, 0.24), inset 0 2px 2px rgba(255, 255, 255, 0.28) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell.ct-puzzle-cell--t1 {
+  background: linear-gradient(180deg, #E36B50 0%, #D95A3D 100%) !important;
+  color: #FAF8F4 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 10px rgba(217, 90, 61, 0.24), inset 0 2px 2px rgba(255, 255, 255, 0.28) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-grid--nonogram .ct-puzzle-cell.ct-puzzle-cell--filled {
+  background: linear-gradient(180deg, #3D70BF 0%, #2E5EA8 100%) !important;
+  color: #FAF8F4 !important;
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.25), inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell.ct-puzzle-cell--shaded {
+  background: linear-gradient(180deg, #3F4652 0%, #2B303A 100%) !important;
+  color: #EAE4D8 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell.ct-puzzle-cell--kakuro-block {
+  background: linear-gradient(180deg, #324969 0%, #243650 100%) !important;
+  color: #FAF8F4 !important;
+  box-shadow: none !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-cell.ct-puzzle-cell--kakuro-block .ct-kakuro-clue {
+  color: #FAF8F4 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-puzzle-numkey.ct-puzzle-numkey--clear {
+  background: linear-gradient(180deg, #FCEBE7 0%, #F5D5CE 100%) !important;
+  color: #B5482F !important;
+  border-color: rgba(181, 72, 47, 0.22) !important;
+}
+
+/* BlockBurst 3D Clay Blocks & Crisp Over Contrast */
+html[data-home-theme] .pz-studio-game .bb-cell.is-filled,
+html[data-home-theme] .pz-studio-game .bb-pcell.on {
+  border-radius: 7px !important;
+  box-shadow:
+    inset 0 2.5px 3px rgba(255, 255, 255, 0.42),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.22),
+    0 2px 4px rgba(27, 31, 36, 0.14) !important;
+}
+
+html[data-home-theme] .pz-studio-game .bb-tray-slot {
+  background: linear-gradient(175deg, #FCFBF8 0%, #EFE9DD 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.94) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 18px rgba(27, 31, 36, 0.08), inset 0 -3px 5px rgba(176, 165, 146, 0.18) !important;
+}
+
+html[data-home-theme] .pz-studio-game .bb-over-title,
+html[data-home-theme] .pz-studio-game .bb-over-score {
+  color: #1B1F24 !important;
+  text-shadow: none !important;
+}
+
+/* Bridges / Crowns / Tangram / Flow Playful Clay Polish */
+html[data-home-theme] .pz-studio-game .ct-bridges-isle {
+  fill: #FCFBF8 !important;
+  stroke: #2E5EA8 !important;
+  stroke-width: 2.5px !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-bridges-isle.is-done {
+  fill: #4D8F68 !important;
+  stroke: #346849 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-bridges-isle.is-done + .ct-bridges-num,
+html[data-home-theme] .pz-studio-game .ct-bridges-isle.is-done text {
+  fill: #FAF8F4 !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-crowns-crown {
+  color: #D9911E !important;
+  filter: drop-shadow(0 2px 3px rgba(27, 31, 36, 0.22));
+}
+
+html[data-home-theme] .pz-studio-game .ct-crowns-crown.is-bad {
+  color: #C83E2B !important;
+}
+
+html[data-home-theme] .pz-studio-game .ct-flow-board,
+html[data-home-theme] .pz-studio-game .ct-tangram-board {
+  background: #EFE9DD !important;
+  border: 2px solid rgba(255, 255, 255, 0.94) !important;
+  border-radius: 22px !important;
+  box-shadow:
+    0 14px 32px rgba(27, 31, 36, 0.12),
+    inset 0 2px 3px rgba(255, 255, 255, 0.8) !important;
+}

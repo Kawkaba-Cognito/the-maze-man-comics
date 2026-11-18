@@ -43,7 +43,6 @@ import NayzakHeader from '../shared/NayzakHeader';
 import DomainGameStage from '../../features/training/shared/DomainGameStage';
 import { getLazyGame } from '../../features/training/lazyGames';
 import { EXPERIMENTS } from '../training/trainingExperimentsData';
-import { getDomainGuardian } from '../../data/nayzakCast';
 import {
   domainRating,
   gameRatingByGameKey,
@@ -78,9 +77,9 @@ const DOMAINS_LIST = [
     en: 'Attention',
     ar: 'الانتباه',
     Icon: Crosshair,
-    color: '#FF7800',
-    softBg: '#FFF4E5',
-    art: 'Assets/domain-art/editorial-2026/attention.webp',
+    color: '#D95A3D',
+    softBg: '#FCEBE7',
+    art: 'Assets/brand/clay-2026/attention.webp',
     descAr: 'البحث البصري، التركيز المستدام، وتثبيط المشتتات',
     descEn: 'Visual search, sustained focus & distractor filtering',
   },
@@ -89,9 +88,9 @@ const DOMAINS_LIST = [
     en: 'Speed',
     ar: 'السرعة',
     Icon: Lightning,
-    color: '#0B63CE',
-    softBg: '#EFF6FF',
-    art: 'Assets/domain-art/editorial-2026/speed.webp',
+    color: '#D9911E',
+    softBg: '#FDF3DF',
+    art: 'Assets/brand/clay-2026/speed.webp',
     descAr: 'سرعة المعالجة الذهنية، الحساب السريع، ودقة التوقيت',
     descEn: 'Rapid processing, mental arithmetic & reaction timing',
   },
@@ -100,9 +99,9 @@ const DOMAINS_LIST = [
     en: 'Memory',
     ar: 'الذاكرة',
     Icon: Brain,
-    color: '#1CB0F6',
-    softBg: '#F0F9FF',
-    art: 'Assets/domain-art/editorial-2026/memory.webp',
+    color: '#2E5EA8',
+    softBg: '#EBF1FA',
+    art: 'Assets/brand/clay-2026/memory.webp',
     descAr: 'الذاكرة العاملة، التذكر المكاني، وتسلسل الأحداث',
     descEn: 'Working memory updating, spatial recall & sequencing',
   },
@@ -111,9 +110,9 @@ const DOMAINS_LIST = [
     en: 'Language',
     ar: 'اللغة',
     Icon: ChatCircleText,
-    color: '#0D9488',
-    softBg: '#F0FDFA',
-    art: 'Assets/domain-art/editorial-2026/language.webp',
+    color: '#4D8F68',
+    softBg: '#EAF4EE',
+    art: 'Assets/brand/clay-2026/language.webp',
     descAr: 'المفردات، الروابط الدلالية، والمعرفة العامة',
     descEn: 'Vocabulary retrieval, word links & general knowledge',
   },
@@ -122,9 +121,9 @@ const DOMAINS_LIST = [
     en: 'Reasoning',
     ar: 'الاستدلال',
     Icon: PuzzlePiece,
-    color: '#4F46E5',
-    softBg: '#EEF2FF',
-    art: 'Assets/domain-art/editorial-2026/reasoning.webp',
+    color: '#5B629E',
+    softBg: '#EEEFF8',
+    art: 'Assets/brand/clay-2026/reasoning.webp',
     descAr: 'التخطيط المكاني، استنتاج القواعد، والتحليل المنطقي',
     descEn: 'Spatial planning, rule induction & deductive logic',
   },
@@ -133,9 +132,9 @@ const DOMAINS_LIST = [
     en: 'Flexibility',
     ar: 'المرونة',
     Icon: ArrowsClockwise,
-    color: '#DF4E32',
-    softBg: '#FFF1EE',
-    art: 'Assets/domain-art/editorial-2026/flexibility.webp',
+    color: '#8C5A7E',
+    softBg: '#F4ECF2',
+    art: 'Assets/brand/clay-2026/flexibility.webp',
     descAr: 'التكيف الحركي، تبديل المهام، وإعادة التصنيف',
     descEn: 'Task switching, motor adaptation & creative sorting',
   },
@@ -155,15 +154,15 @@ function GameLoading({ isAr }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#FAF7F2',
-        color: '#0F1E33',
-        fontFamily: "'Cairo', 'Outfit', system-ui, sans-serif",
+        background: '#F2EEE6',
+        color: '#1B1F24',
+        fontFamily: "'Inter', 'Cairo', system-ui, sans-serif",
         fontSize: 17,
-        fontWeight: 800,
+        fontWeight: 700,
         gap: 10,
       }}
     >
-      <Sparkle size={34} weight="duotone" color="#0B63CE" />
+      <Sparkle size={34} weight="duotone" color="#2F4A6D" />
       <span>{isAr ? 'جارِ التحميل...' : 'Loading...'}</span>
     </div>
   );
@@ -306,8 +305,7 @@ export default function DomainsScreen() {
     ).length;
     const rating = domainRating(domain.id);
     const band = rating != null ? ratingBand(rating) : null;
-    const guardian = getDomainGuardian(domain.id);
-    return { domain, games, playedCount, rating, band, guardian };
+    return { domain, games, playedCount, rating, band };
   });
 
   const selectedSummary = selectedDomainId
@@ -386,9 +384,9 @@ export default function DomainsScreen() {
     );
   }
 
-  // Domain Detail Mode (Clean Lumosity/Elevate Editorial Header + Exercises List)
+  // Domain Detail Mode (Clean Light Clay Studio Header + Exercises List)
   if (selectedSummary) {
-    const { domain, games, playedCount, rating, band, guardian } = selectedSummary;
+    const { domain, games, playedCount, rating, band } = selectedSummary;
     const domainName = isAr ? domain.ar : domain.en;
     const domainDesc = isAr ? domain.descAr : domain.descEn;
 
@@ -481,26 +479,6 @@ export default function DomainsScreen() {
                 <p className="lum-domain-detail-desc">{domainDesc}</p>
               </div>
             </div>
-
-            {guardian && (
-              <div className="lum-guardian-strip">
-                <img
-                  src={guardian.avatarUrl}
-                  alt={isAr ? guardian.nameAr : guardian.nameEn}
-                  className="lum-guardian-avatar"
-                  draggable="false"
-                />
-                <div className="lum-guardian-copy">
-                  <div className="lum-guardian-name">
-                    <strong>{isAr ? guardian.nameAr : guardian.nameEn}</strong>
-                    <span>{isAr ? guardian.roleAr : guardian.roleEn}</span>
-                  </div>
-                  <p className="lum-guardian-quote">
-                    {isAr ? guardian.quoteAr : guardian.quoteEn}
-                  </p>
-                </div>
-              </div>
-            )}
           </section>
 
           <div className="lum-section-row">
@@ -619,7 +597,6 @@ export default function DomainsScreen() {
               const name = isAr ? domain.ar : domain.en;
               const desc = isAr ? domain.descAr : domain.descEn;
               const pct = Math.round((playedCount / Math.max(1, games.length)) * 100);
-              const guardian = getDomainGuardian(domain.id);
 
               return (
                 <button
@@ -639,16 +616,6 @@ export default function DomainsScreen() {
                       draggable="false"
                       className="lum-card-stage-img"
                     />
-                    {guardian && (
-                      <span className="nayzak-stage-guardian" title={isAr ? guardian.nameAr : guardian.nameEn}>
-                        <img
-                          src={guardian.avatarUrl}
-                          alt={isAr ? guardian.nameAr : guardian.nameEn}
-                          draggable="false"
-                        />
-                        <span>{isAr ? guardian.nameAr : guardian.nameEn}</span>
-                      </span>
-                    )}
                     {rating != null && band ? (
                       <span className="lum-rating-chip lum-stage-pill">
                         <Star size={11} weight="fill" aria-hidden="true" />
@@ -685,9 +652,12 @@ export default function DomainsScreen() {
                         </span>
                       </div>
 
-                      <span className="lum-domain-cta" style={{ color: domain.color }}>
-                        <span>{isAr ? 'تدرب' : 'Train'}</span>
-                        <NavArrow size={14} weight="bold" aria-hidden="true" />
+                      <span
+                        className="clay-card-pill-btn"
+                        style={{ backgroundColor: domain.color }}
+                      >
+                        <span>{isAr ? 'ابدأ' : 'Play'}</span>
+                        <NavArrow size={13} weight="bold" aria-hidden="true" />
                       </span>
                     </div>
                   </div>

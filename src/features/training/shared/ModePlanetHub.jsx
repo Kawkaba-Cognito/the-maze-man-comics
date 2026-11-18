@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { Play } from '@phosphor-icons/react';
+import { Cube, Lightning, Play, Sword, Target } from '@phosphor-icons/react';
 
 /*
- * Duolingo-styled Mode Hub — chunky 3D cards for Levels, Survival & Pass & Play.
- * Preserves `.ct-mph*` container and button selectors for full compatibility across
- * all 18 original training games.
+ * Light Clay Studio Mode Hub — tactile polymer clay mode cards for
+ * Levels, Survival & Pass & Play. Preserves `.ct-mph*` selectors for
+ * full compatibility across all 18 cognitive training games.
  */
 
-const MODE_ICON = {
-  levels: '🎯',
-  free: '⚡',
-  chal: '⚔️',
-  proto3d: '🧊',
+const MODE_ICON_MAP = {
+  levels: Target,
+  free: Lightning,
+  chal: Sword,
+  proto3d: Cube,
 };
 
 const SLOT_CLASS = {
@@ -24,21 +24,24 @@ const SLOT_CLASS = {
 function ModeCard({ item, isAr, playSfx, hovered, setHovered }) {
   const modeKey = item.k;
   const isHot = hovered === modeKey;
-  const icon = MODE_ICON[modeKey] || item.ic || '🎮';
+  const ModeIcon = MODE_ICON_MAP[modeKey] || Target;
 
   return (
     <button
       type="button"
-      className={`ct-mph-planet duo-mode-card${isHot ? ' is-hot' : ''}`}
-      onClick={() => { playSfx?.('click'); item.on?.(); }}
+      className={`ct-mph-planet duo-mode-card clay-mode-card${isHot ? ' is-hot' : ''}`}
+      onClick={() => {
+        playSfx?.('click');
+        item.on?.();
+      }}
       onMouseEnter={() => setHovered(modeKey)}
       onMouseLeave={() => setHovered(null)}
       onFocus={() => setHovered(modeKey)}
       onBlur={() => setHovered(null)}
       aria-label={item.hint ? `${item.lb} — ${item.hint}` : item.lb}
     >
-      <span className={`duo-mode-icon-wrap duo-mode--${modeKey}`} aria-hidden="true">
-        {icon}
+      <span className={`duo-mode-icon-wrap duo-mode--${modeKey} clay-mode-token`} aria-hidden="true">
+        <ModeIcon size={22} weight="fill" />
       </span>
       <span className="ct-mph-planet-copy">
         <span className="ct-mph-planet-name">{item.lb}</span>
@@ -68,7 +71,7 @@ export default function ModePlanetHub({ items = [], isAr, playSfx }) {
   const cards = [...ordered, ...extras];
 
   return (
-    <div className="ct-mph duo-mode-hub" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="ct-mph duo-mode-hub clay-mode-hub" dir={isAr ? 'rtl' : 'ltr'}>
       <div className="ct-mph-constellation" role="group" aria-label={isAr ? 'اختر الوضع' : 'Choose a mode'}>
         {cards.map((item) => (
           <div key={item.k} className={`ct-mph-slot ${SLOT_CLASS[item.k] || ''}`.trim()}>

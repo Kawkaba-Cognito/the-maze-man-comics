@@ -58,19 +58,16 @@ function loadThree() {
 
 const CSS = `
 .vr-root {
-  /* App palette: Kawkab blue + app amber over dusk indigo. These now match the
-     3D scene's VR.* constants, and the raw neon literals that used to bypass
-     them (rgba(0,245,255…) / rgba(255,45,155…)) have been folded in. */
-  --vr-pink:   var(--game-bad, #854c49);
-  --vr-cyan:   var(--game-accent, #8fb8e8);
-  --vr-purple: #6f6a9c;
-  --vr-gold:   var(--color-amber, #e8ac4e);
-  --vr-dark-bg: var(--play-surface-deep-flat, #121826);
+  --vr-pink:   #D95A3D;
+  --vr-cyan:   #2E5EA8;
+  --vr-purple: #5E9472;
+  --vr-gold:   #E3A12B;
+  --vr-dark-bg: #EFE9DD;
   position: fixed; inset: 0; z-index: 60;
   background: var(--vr-dark-bg);
   overflow: hidden;
-  font-family: 'DM Mono', monospace;
-  color: var(--play-ink-deep, #ece0c8);
+  font-family: 'Inter', 'Cairo', system-ui, sans-serif;
+  color: #1B1F24;
   touch-action: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -78,69 +75,57 @@ const CSS = `
 .vr-root * { box-sizing: border-box; }
 
 .vr-container { position:relative; width:100%; height:100%; }
-/* touch-action on the CANVAS, not only on .vr-root: the property does not
-   inherit, and the canvas is the element the swipe listeners are bound to.
-   Without it a horizontal drag can be claimed by the browser as a pan/back
-   gesture, which fires pointercancel mid-swipe and eats the lane change. */
 .vr-root canvas { display:block; position:absolute; top:0; left:0; touch-action:none; }
 
-.vr-scanlines { position:absolute; inset:0; pointer-events:none; z-index:5;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); }
+.vr-scanlines { display:none; }
 .vr-vignette { position:absolute; inset:0; pointer-events:none; z-index:4;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%); transition:opacity 0.3s; }
+  background: radial-gradient(ellipse at center, transparent 62%, rgba(27,31,36,0.14) 100%); transition:opacity 0.3s; }
 .vr-speedlines { position:absolute; inset:0; pointer-events:none; z-index:3; opacity:0; transition:opacity 0.3s;
-  background: radial-gradient(ellipse at center, transparent 30%, rgba(143,184,232,0.04) 60%, rgba(217,146,79,0.08) 100%); }
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(46,94,168,0.06) 70%, rgba(217,90,61,0.12) 100%); }
 
 .vr-hud { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start;
-  padding:calc(16px + env(safe-area-inset-top)) 20px 16px; pointer-events:none; z-index:10; }
+  padding:calc(14px + env(safe-area-inset-top)) 18px 14px; pointer-events:none; z-index:10; }
 .vr-hud-block,
-.vr-liveshud { min-width:82px; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-  padding:7px 10px; background:rgba(18,24,38,0.8); border:1px solid rgba(236,224,200,0.32); border-radius:12px;
-  box-shadow:3px 3px 0 var(--fx-shadow-drop, rgba(3,7,16,0.88)); backdrop-filter:blur(5px); }
-.vr-hud-label { font-size:9px; letter-spacing:3px; color:var(--play-ink-deep-dim, #b9bfd0); text-transform:uppercase; }
-.vr-hud-val { font-family:'DM Mono',sans-serif; font-size:20px; font-weight:700; color:var(--play-ink-deep, #ece0c8); text-shadow:none; }
-.vr-liveshud { flex-direction:row; gap:6px; }
-.vr-heart { font-size:18px; transition:transform 0.2s, opacity 0.2s; }
-.vr-heart.vr-dead { opacity:0.2; transform:scale(0.7); }
+.vr-liveshud { min-width:86px; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  padding:8px 14px; background:linear-gradient(180deg,#FCFBF8 0%,#F1ECE2 100%); border:1.5px solid rgba(255,255,255,0.92); border-radius:18px;
+  box-shadow:0 8px 18px rgba(27,31,36,0.12), inset 0 2px 3px rgba(255,255,255,0.95), inset 0 -3px 5px rgba(176,165,146,0.22); }
+.vr-hud-label { font-size:9px; font-weight:800; letter-spacing:2px; color:#5C6066; text-transform:uppercase; }
+.vr-hud-val { font-family:'Archivo Black', 'Cairo', system-ui, sans-serif; font-size:20px; font-weight:400; color:#1B1F24; }
+.vr-liveshud { flex-direction:row; gap:6px; color:#D95A3D; }
+.vr-heart { font-size:19px; transition:transform 0.2s, opacity 0.2s; filter:drop-shadow(0 2px 2px rgba(217,90,61,0.22)); }
+.vr-heart.vr-dead { opacity:0.22; transform:scale(0.7); filter:none; }
 
-.vr-speedbar { position:absolute; top:calc(72px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+.vr-speedbar { position:absolute; top:calc(74px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
   display:flex; flex-direction:column; align-items:center; gap:4px; pointer-events:none; z-index:10; }
-.vr-speedlabel { font-size:9px; letter-spacing:3px; color:rgba(143,184,232,0.4); }
-.vr-levellabel { color:rgba(255,255,255,0.55); margin-inline-start:6px; }
-.vr-speedtrack { width:120px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
-.vr-speedfill { height:100%; width:0%; background:linear-gradient(90deg,var(--vr-cyan),var(--vr-pink));
-  border-radius:2px; transition:width 0.3s; box-shadow:0 0 8px var(--vr-cyan); }
+.vr-speedlabel { font-size:9px; font-weight:800; letter-spacing:2px; color:#2F4A6D; }
+.vr-levellabel { color:#D95A3D; margin-inline-start:6px; }
+.vr-speedtrack { width:128px; height:7px; background:rgba(27,31,36,0.12); border-radius:999px; overflow:hidden; box-shadow:inset 0 2px 3px rgba(0,0,0,0.14); }
+.vr-speedfill { height:100%; width:0%; background:linear-gradient(90deg,#2E5EA8,#5E9472,#E3A12B);
+  border-radius:999px; transition:width 0.3s; }
 
-/* The Pulse charge meter — sits with the speed bar in the top stack, never over
-   the play area (this game has form: a mid-screen level banner had to be pulled
-   out of the dodging sightline twice). */
-.vr-power { position:absolute; top:calc(94px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+.vr-power { position:absolute; top:calc(98px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
   display:none; flex-direction:column; align-items:center; gap:4px; pointer-events:none; z-index:10; }
-.vr-power-label { font-size:9px; letter-spacing:3px; color:rgba(232,172,78,0.55); text-transform:uppercase; }
-.vr-power-track { width:120px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
-.vr-power-fill { height:100%; width:0%; background:var(--vr-gold); border-radius:2px;
-  transition:width 0.25s; box-shadow:0 0 8px var(--vr-gold); }
-/* Armed: the label pulses so "you have something to spend" is visible without
-   reading. Fires the moment you TAP — swiping still only steers. */
-.vr-power.vr-ready .vr-power-label { color:var(--vr-gold); animation:vrPowerReady 1.1s ease-in-out infinite; }
-.vr-power.vr-ready .vr-power-fill { box-shadow:0 0 14px var(--vr-gold); }
-@keyframes vrPowerReady { 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
-.vr-power.vr-firing .vr-power-label { color:#ffd47e; }
-.vr-power.vr-firing .vr-power-fill { background:#ffd47e; box-shadow:0 0 16px #ffd47e; transition:width 0.1s linear; }
+.vr-power-label { font-size:9px; font-weight:800; letter-spacing:2px; color:#B37714; text-transform:uppercase; }
+.vr-power-track { width:128px; height:7px; background:rgba(27,31,36,0.12); border-radius:999px; overflow:hidden; box-shadow:inset 0 2px 3px rgba(0,0,0,0.14); }
+.vr-power-fill { height:100%; width:0%; background:linear-gradient(90deg,#E3A12B,#D95A3D); border-radius:999px; transition:width 0.25s; }
+.vr-power.vr-ready .vr-power-label { color:#D95A3D; animation:vrPowerReady 0.9s ease-in-out infinite; }
+@keyframes vrPowerReady { 0%,100%{ opacity:0.65; } 50%{ opacity:1; } }
+.vr-power.vr-firing .vr-power-label { color:#2E5EA8; }
+.vr-power.vr-firing .vr-power-fill { background:#2E5EA8; transition:width 0.1s linear; }
 
-.vr-combodisplay { position:absolute; top:calc(126px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
-  pointer-events:none; z-index:10; text-align:center; opacity:0; transition:opacity 0.3s; }
-.vr-combotext { font-family:'DM Mono',sans-serif; font-size:20px; font-weight:900; color:var(--vr-gold);
-  text-shadow:0 0 20px var(--vr-gold); letter-spacing:3px; }
+.vr-combodisplay { position:absolute; top:calc(128px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+  pointer-events:none; z-index:10; text-align:center; opacity:0; transition:opacity 0.25s; }
+.vr-combotext { font-family:'Archivo Black',system-ui,sans-serif; font-size:20px; color:#D95A3D;
+  background:#FAF8F4; padding:4px 14px; border-radius:999px; box-shadow:0 6px 16px rgba(27,31,36,0.15); letter-spacing:1.5px; }
 
-.vr-popup { position:absolute; left:50%; top:calc(148px + env(safe-area-inset-top)); transform:translateX(-50%); pointer-events:none; z-index:15; text-align:center;
-  font-family:'DM Mono',sans-serif; font-size:18px; font-weight:900; letter-spacing:4px; opacity:0; text-shadow:0 0 20px currentColor; }
+.vr-popup { position:absolute; left:50%; top:calc(152px + env(safe-area-inset-top)); transform:translateX(-50%); pointer-events:none; z-index:15; text-align:center;
+  font-family:'Archivo Black',system-ui,sans-serif; font-size:18px; letter-spacing:2px; opacity:0; text-shadow:0 2px 6px rgba(255,255,255,0.85); }
 
-.vr-pausebtn { position:absolute; top:calc(22px + env(safe-area-inset-top)); left:calc(50% + 58px); transform:none;
-  z-index:20; pointer-events:all; background:rgba(0,0,0,0.5); border:1px solid rgba(143,184,232,0.3); border-radius:50%;
-  width:38px; height:38px; color:rgba(143,184,232,0.7); font-size:14px; cursor:pointer; display:none;
-  align-items:center; justify-content:center; transition:border-color 0.2s, color 0.2s; }
-.vr-pausebtn:hover { border-color:var(--vr-cyan); color:var(--vr-cyan); }
+.vr-pausebtn { position:absolute; top:calc(20px + env(safe-area-inset-top)); left:calc(50% + 60px); transform:none;
+  z-index:20; pointer-events:all; background:linear-gradient(180deg,#FCFBF8 0%,#EDE7DA 100%); border:1.5px solid rgba(255,255,255,0.92); border-radius:50%;
+  width:42px; height:42px; color:#1B1F24; font-size:14px; cursor:pointer; display:none;
+  align-items:center; justify-content:center; box-shadow:0 6px 14px rgba(27,31,36,0.14), inset 0 -2px 4px rgba(0,0,0,0.1); }
+.vr-pausebtn:hover { transform:translateY(-1px); }
 
 /* Steering is a SWIPE, so the controls are a hint, not a target. The two 90px
    thumb circles that used to sit here were pure decoration — pointer-events:none
@@ -265,168 +250,168 @@ const CSS = `
 .vr-how-key { display:inline-block; background:rgba(143,184,232,0.15); border:1px solid rgba(143,184,232,0.3); border-radius:3px;
   padding:1px 7px; color:var(--vr-cyan); font-size:11px; letter-spacing:2px; }
 
-/* Puzzle Studio edition: dark cosmic play, restrained Training Hub surfaces. */
 .vr-root {
-  font-family:'Outfit','DM Mono',sans-serif;
-  /* A SOLID COLOUR UNDER THE GRADIENTS, AND IT IS LOAD-BEARING NOW.
-     --play-surface-deep is an IMAGE, so this shorthand left background-color
-     computing as rgba(0,0,0,0) - the root had no opaque ground at all. That did
-     not matter while an ancestor painted one, but the Puzzle Studio ground is
-     transparent since 2026-09-08, so the app background showed through wherever
-     the canvas does not reach, washing the strip above and below the play area
-     pale. Reported as "there is blurring in the screen". The canvas itself is
-     opaque; it simply is not the whole root.
-
-     NOTE: this whole block is inside a JS template literal. No backticks in
-     these comments - one here took the live app down on 2026-09-08. */
-  background-color: var(--vr-dark-bg, #121826);
-  background-image:
-    radial-gradient(ellipse at 18% 12%, rgba(154,128,200,0.16), transparent 42%),
-    radial-gradient(ellipse at 86% 72%, rgba(101,183,176,0.12), transparent 44%),
-    var(--play-surface-deep, none);
+  font-family:'Inter','Cairo',system-ui,sans-serif;
+  background-color: #EFE9DD;
+  background-image: none;
 }
-.vr-scanlines { opacity:0.2; }
+.vr-scanlines { display:none; }
 .vr-speedlines {
-  background:radial-gradient(ellipse at center, transparent 34%, rgba(101,183,176,0.035) 62%, rgba(154,128,200,0.075) 100%);
+  background:radial-gradient(ellipse at center, transparent 42%, rgba(46,94,168,0.06) 72%, rgba(217,90,61,0.12) 100%);
 }
 #vr-menuscreen,
 #vr-pausescreen,
 #vr-gameoverscreen,
 .vr-sub-screen {
-  background:
-    radial-gradient(ellipse at 50% 22%, rgba(154,128,200,0.17), transparent 46%),
-    linear-gradient(180deg, rgba(17,24,42,0.88), rgba(9,13,25,0.94));
+  background: radial-gradient(circle at 50% 24%, rgba(255,253,248,0.72), rgba(239,233,221,0.88));
+  backdrop-filter: blur(8px);
 }
-.vr-sub-screen {
-  background:
-    radial-gradient(ellipse at 50% 18%, rgba(154,128,200,0.14), transparent 42%),
-    linear-gradient(180deg, rgba(17,24,42,0.97), rgba(9,13,25,0.985));
-  backdrop-filter:blur(7px);
-}
-/* Titles are Cinzel engraved caps — the app's landing-title voice (the Training
-   hub, the domain headers). The logo was a DM Mono gradient wordmark, which is
-   an arcade convention and the one thing on the menu that still announced this
-   as a different product. Same treatment for every screen heading below, so the
-   game's four screens read as one family with the rest of the app. */
 .vr-game-logo {
-  font-family:'Cinzel','Cormorant Garamond',serif;
-  font-size:clamp(38px,8.4vw,62px);
-  font-weight:700;
-  letter-spacing:0.16em;
-  color:#f4ead6;
-  text-shadow:0 4px 0 rgba(3,7,16,0.92);
+  font-family:'Archivo Black', 'Cairo', system-ui, sans-serif;
+  font-size:clamp(38px,8.4vw,60px);
+  font-weight:400;
+  letter-spacing:0.04em;
+  color:#1B1F24;
+  text-shadow:0 4px 0 rgba(255,255,255,0.85), 0 10px 24px rgba(47,74,109,0.18);
 }
 .vr-sub-title,
 .vr-go-title,
 #vr-pausescreen h2 {
-  font-family:'Cinzel','Cormorant Garamond',serif;
-  font-weight:600;
-  letter-spacing:0.18em;
+  font-family:'Archivo Black', 'Cairo', system-ui, sans-serif;
+  font-weight:400;
+  letter-spacing:0.04em;
+  color:#1B1F24;
+  text-shadow:none;
 }
 .vr-tagline,
 .vr-hud-label,
 .vr-speedlabel,
 .vr-sub-title {
-  color:#b9bfd0;
+  color:#5C6066;
+  text-shadow:none;
+}
+.vr-menu-eyebrow {
+  background:#2E5EA8;
+  color:#FAF8F4;
+  padding:5px 14px;
+  border-radius:999px;
+  font-weight:800;
+  box-shadow:0 6px 14px rgba(46,94,168,0.22), inset 0 2px 2px rgba(255,255,255,0.25);
+}
+.vr-menu-meta span {
+  background:linear-gradient(180deg,#FCFBF8 0%,#EDE7DA 100%);
+  border:1px solid rgba(255,255,255,0.92);
+  color:#1B1F24;
+  font-weight:700;
+  box-shadow:0 4px 10px rgba(27,31,36,0.08);
+}
+.vr-best-badge {
+  color:#D95A3D;
+  font-weight:800;
   text-shadow:none;
 }
 .vr-hud-val,
 .vr-stat-card .vr-sv,
 .vr-hs-score,
 .vr-setting-val {
-  color:#f7f1e8;
+  color:#1B1F24;
   text-shadow:none;
 }
 .vr-neon-btn {
-  min-width:250px;
-  padding:14px 34px;
-  border:2px solid #f2e8d6;
-  border-radius:13px;
-  letter-spacing:0.15em;
-  box-shadow:3px 3px 0 #030710;
+  min-width:248px;
+  padding:15px 32px;
+  border:none;
+  border-radius:999px;
+  font-family:'Inter',system-ui,sans-serif;
+  font-weight:800;
+  letter-spacing:0.08em;
 }
-/* The primary action is AMBER, like every "act on me" button in the app
-   (.ct-fq-btn-pri: the accent over its own edge, an ink outline, a hard offset
-   shadow). It was a lilac #69549b that appears nowhere else in the product. */
 .vr-neon-btn-primary {
-  color:#2a1c06;
-  background:linear-gradient(180deg,var(--vr-gold) 0%,#c98a30 100%);
-  border-color:#f2e8d6;
-  box-shadow:3px 3px 0 #030710;
+  color:#FAF8F4;
+  background:linear-gradient(180deg,#3D70BF 0%,#2E5EA8 100%);
+  box-shadow:0 8px 20px rgba(46,94,168,0.28), inset 0 2px 3px rgba(255,255,255,0.32), inset 0 -4px 6px rgba(15,34,64,0.36);
 }
 .vr-neon-btn-primary:hover {
-  transform:translateY(-1px);
-  background:linear-gradient(180deg,#ffd47e 0%,var(--vr-gold) 100%);
-  box-shadow:4px 5px 0 #030710;
+  transform:translateY(-2px);
+  box-shadow:0 12px 24px rgba(46,94,168,0.32), inset 0 2px 3px rgba(255,255,255,0.38), inset 0 -4px 6px rgba(15,34,64,0.36);
+}
+.vr-neon-btn-primary:active {
+  transform:translateY(2px);
 }
 .vr-neon-btn-secondary {
-  color:#e8edf5;
-  background:rgba(247,249,252,0.06);
-  border-color:rgba(242,232,214,0.56);
-  box-shadow:2px 2px 0 #030710;
+  color:#1B1F24;
+  background:linear-gradient(180deg,#FCFBF8 0%,#ECE6D9 100%);
+  border:1.5px solid rgba(255,255,255,0.9);
+  box-shadow:0 5px 12px rgba(27,31,36,0.09), inset 0 2px 2px rgba(255,255,255,0.9), inset 0 -3px 5px rgba(176,165,146,0.22);
 }
 .vr-neon-btn-secondary:hover {
-  color:#fff;
-  background:rgba(101,183,176,0.16);
-  border-color:#f2e8d6;
-  box-shadow:3px 3px 0 #030710;
+  color:#2E5EA8;
+  transform:translateY(-1px);
 }
 .vr-stat-card,
 .vr-setting-row,
 .vr-how-row,
 .vr-hs-row {
-  border-color:rgba(242,232,214,0.22);
+  border-color:rgba(27,31,36,0.12);
 }
 .vr-stat-card {
-  background:rgba(247,249,252,0.07);
-  border-width:2px;
-  border-radius:14px;
-  box-shadow:2px 2px 0 rgba(3,7,16,0.9);
+  background:linear-gradient(180deg,#FCFBF8 0%,#EFE9DD 100%);
+  border:1.5px solid rgba(255,255,255,0.92);
+  border-radius:18px;
+  box-shadow:0 8px 18px rgba(27,31,36,0.09), inset 0 2px 3px rgba(255,255,255,0.95), inset 0 -3px 5px rgba(176,165,146,0.18);
 }
+.vr-stat-card .vr-sl { color:#5C6066; font-weight:700; }
 .vr-root input[type=text],
 .vr-toggle-btn {
-  color:#f7f1e8;
-  background:rgba(247,249,252,0.07);
-  border:2px solid rgba(242,232,214,0.45);
-  border-radius:10px;
+  color:#1B1F24;
+  background:#FCFBF8;
+  border:1.5px solid rgba(27,31,36,0.16);
+  border-radius:12px;
 }
+.vr-toggle-btn.vr-on { background:#2E5EA8; color:#FAF8F4; border-color:#2E5EA8; }
+.vr-toggle-btn.vr-off { background:#EFE9DD; color:#5C6066; }
 .vr-root input[type=range] {
-  background:rgba(101,183,176,0.25);
+  background:rgba(46,94,168,0.22);
 }
 .vr-root input[type=range]::-webkit-slider-thumb {
-  background:var(--vr-cyan);
-  box-shadow:0 0 0 2px #f2e8d6;
+  background:#2E5EA8;
+  box-shadow:0 2px 6px rgba(46,94,168,0.35);
 }
 .vr-pausebtn {
-  color:#f7f1e8;
-  background:rgba(9,13,25,0.72);
-  border:2px solid rgba(242,232,214,0.55);
-  box-shadow:2px 2px 0 #030710;
+  color:#1B1F24;
+  background:linear-gradient(180deg,#FCFBF8 0%,#EDE7DA 100%);
+  border:1.5px solid rgba(255,255,255,0.92);
+  box-shadow:0 6px 14px rgba(27,31,36,0.14);
 }
-.vr-go-title,
-#vr-pausescreen h2,
+.vr-lane-indicator {
+  background:rgba(250,248,244,0.88);
+  border:1.5px solid rgba(255,255,255,0.92);
+  box-shadow:0 6px 14px rgba(27,31,36,0.12);
+}
+.vr-lane-dot { background:rgba(47,74,109,0.22); border-color:transparent; }
+.vr-lane-dot.vr-active { background:#D95A3D; border-color:#FAF8F4; box-shadow:0 0 0 2px rgba(217,90,61,0.28); }
 .vr-countdownnum {
-  color:#f7f1e8;
-  text-shadow:0 4px 0 #030710;
+  font-family:'Archivo Black',system-ui,sans-serif;
+  color:#2E5EA8;
+  text-shadow:0 6px 0 rgba(255,255,255,0.9), 0 12px 26px rgba(46,94,168,0.24);
 }
 .vr-hint-row,
 .vr-how-text,
 .vr-setting-label,
 .vr-hs-name {
-  color:#b9bfd0;
+  color:#4A5058;
 }
-.vr-hint-row span,
+.vr-swipe-word { color:#2F4A6D; font-weight:800; }
+.vr-swipe-arrow { color:#D95A3D; }
 .vr-how-key {
-  color:#b8ded9;
+  background:#E3ECF7;
+  border:1px solid rgba(46,94,168,0.28);
+  color:#2E5EA8;
+  border-radius:8px;
 }
-.vr-how-key {
-  background:rgba(101,183,176,0.13);
-  border:1px solid rgba(101,183,176,0.46);
-  border-radius:6px;
-}
-.vr-copy-strong { color:var(--play-ink-deep, #ece0c8); font-weight:700; }
-.vr-copy-gold { color:var(--vr-gold); font-weight:700; }
-.vr-copy-bad { color:#e4a09b; font-weight:700; }
+.vr-copy-strong { color:#1B1F24; font-weight:800; }
+.vr-copy-gold { color:#B37714; font-weight:800; }
+.vr-copy-bad { color:#D95A3D; font-weight:800; }
 .vr-root button:focus-visible,
 .vr-root input:focus-visible { outline:3px solid var(--game-selected, #b8ded9); outline-offset:3px; }
 @media (max-width:520px) {
@@ -490,10 +475,10 @@ const HTML = `
   </div>
 
   <div class="vr-screen" id="vr-menuscreen">
-    <div class="vr-menu-eyebrow">Puzzle Studio &middot; Flight Run</div>
-    <div class="vr-game-logo">VOID<br>RUNNER</div>
-    <div class="vr-tagline">Survive the Impossible</div>
-    <div class="vr-menu-meta"><span>3 lanes</span><span>Pulse cannon</span><span>Endless</span></div>
+    <div class="vr-menu-eyebrow">Clay Studio &middot; Sky Flight</div>
+    <div class="vr-game-logo">CLAY<br>PLANE</div>
+    <div class="vr-tagline">Glide Through Sunlit Clay Canyons</div>
+    <div class="vr-menu-meta"><span>3 Sky Lanes</span><span>Clay Star Burst</span><span>Endless</span></div>
     <div class="vr-best-badge" id="vr-menubest">&#127942; BEST: 0</div>
     <button class="vr-neon-btn vr-neon-btn-primary" id="vr-btnplay" type="button" style="margin-bottom:12px">&#9654; &nbsp;START RUN</button>
     <button class="vr-neon-btn vr-neon-btn-secondary" id="vr-btnscores" type="button" style="margin-bottom:8px">&#127942; &nbsp;HIGH SCORES</button>
@@ -570,8 +555,8 @@ const HTML = `
 
   <div class="vr-screen" id="vr-gameoverscreen" style="display:none">
     <div style="font-size:52px;margin-bottom:8px">&#128165;</div>
-    <h2 class="vr-go-title">VOID LOST</h2>
-    <p class="vr-go-sub">THE VOID CLAIMS ANOTHER RUNNER</p>
+    <h2 class="vr-go-title">FLIGHT OVER</h2>
+    <p class="vr-go-sub">YOUR CLAY PLANE TOUCHED DOWN IN THE CANYON</p>
     <div class="vr-stats-row">
       <div class="vr-stat-card"><span class="vr-sv" id="vr-goscore">0</span><span class="vr-sl">SCORE</span></div>
       <div class="vr-stat-card"><span class="vr-sv" id="vr-golevel">1</span><span class="vr-sl">LEVEL</span></div>
@@ -821,32 +806,28 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
    * and the app amber as the two accents.
    */
   const VR = {
-    skyTop: '#101725',      // Training's deep play surface
-    skyMid: '#28304a',      // cool graphite-violet band
-    skyLow: '#5d4a4f',      // restrained warm horizon
-    fog: 0x34394e,          // distance recedes without washing out the lanes
-    ambient: 0x30364c,
-    keyLight: 0xffd9a8,     // warm sun, replaces the violet key
-    warmAccent: 0xd9924f,   // app amber, replaces the hot pink
-    coolAccent: 0x8fb8e8,   // Kawkab blue, replaces the electric cyan
-    floor: 0x151c2d,
-    laneLine: 0x526278,
-    arch: 0x46526a,
-    gem: 0xe8ac4e,
-    /* The ship, as one named group rather than seven raw hexes inline.
-     * These mirror the Spaceship game's palette (train-switch/CarPark3DProto)
-     * so the two craft read as the same fleet: pale steel hull, cream spine,
-     * dark glass canopy, warm nacelles and amber thrust. */
-    hull: 0xc3d3e6,
-    hullEmissive: 0x2f4763,
-    stripe: 0xeaf4ff,
-    glass: 0x0e1a22,
-    glassEmissive: 0x6bb3c8,
-    nacelle: 0x2a241a,
-    thrust: 0xffd27a,
-    invincible: 0x8fe8e0,   // the shield tell — cool, but no longer arcade cyan
-    hazardBurst: 0xd9662f,  // debris from a destroyed obstacle
-    cssGold: '#e8ac4e',     // same amber as --vr-gold, for the DOM-side popups
+    skyTop: '#C5DFEE',      // sunlit soft blue sky zenith
+    skyMid: '#EBE7DD',      // warm cream sky band
+    skyLow: '#E7D8C3',      // sunlit terracotta sand horizon
+    fog: 0xEAE4D7,          // soft cream atmospheric depth
+    ambient: 0xFFF7EA,
+    keyLight: 0xFFF4DC,     // warm studio sun
+    warmAccent: 0xD95A3D,   // Terracotta Coral polymer clay
+    coolAccent: 0x2E5EA8,   // Cobalt Navy polymer clay
+    floor: 0xE1D7C6,        // warm sculpted clay canyon deck
+    laneLine: 0x99A5B2,     // sunken clay lane guide
+    arch: 0xEFEAE0,         // warm cream canyon archways
+    gem: 0xE3A12B,          // ochre gold clay coin
+    hull: 0x2E5EA8,         // Cobalt Blue polymer clay fuselage
+    hullEmissive: 0x162E54,
+    stripe: 0xFAF6EE,       // Warm Cream clay wing
+    glass: 0xFAF6EE,        // smooth cream pilot canopy
+    glassEmissive: 0x4E7CB8,
+    nacelle: 0xD95A3D,      // Terracotta Coral nose/wingtips
+    thrust: 0xFAF6EE,       // puffy matte cloud rings
+    invincible: 0xE3A12B,   // golden clay shield shimmer
+    hazardBurst: 0xD95A3D,  // terracotta clay shards
+    cssGold: '#D95A3D',
   };
 
   // ── THREE.JS SETUP ──
@@ -987,63 +968,46 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   // much is on screen and lit — i.e. exactly the obstacle-dodging moments —
   // not the draw-call count fixed above. Desktop is untouched.
   function neonMat(opts) {
-    if (!isTouch) return new THREE.MeshStandardMaterial(opts);
-    const { roughness, metalness, ...rest } = opts;
+    const clayOpts = { roughness: 0.85, metalness: 0.04, ...opts };
+    if (!isTouch) return new THREE.MeshStandardMaterial(clayOpts);
+    const { roughness: _r, metalness: _m, ...rest } = clayOpts;
     return new THREE.MeshLambertMaterial(rest);
   }
 
-  // ── LIGHTING ──
-  /*
-   * Lit like dusk, not like a nightclub. The ambient is raised well above the
-   * old 0x0a0020 so surfaces read without needing emissive neon to carry them —
-   * this is most of what makes the scene "lighter".
-   */
-  const ambient = new THREE.AmbientLight(VR.ambient, 2.0);
+  // ── LIGHTING (Bright Diffused Clay Studio Softbox) ──
+  const hemi = new THREE.HemisphereLight(0xFFFDF8, 0xD2C3AC, 1.35);
+  scene.add(hemi);
+  const ambient = new THREE.AmbientLight(VR.ambient, 1.05);
   scene.add(ambient);
-  const dirLight = new THREE.DirectionalLight(VR.keyLight, 1.45);
-  dirLight.position.set(5, 12, 8);
+  const dirLight = new THREE.DirectionalLight(VR.keyLight, 1.15);
+  dirLight.position.set(6, 14, 9);
   scene.add(dirLight);
-  /*
-   * ONE sweeping accent light, not two.
-   *
-   * There used to be a warm one and a cool one crossing the tunnel in opposite
-   * directions. Every point light adds a full lighting evaluation per fragment
-   * of every lit surface, and in a tunnel the camera is looking down a corridor
-   * of overdraw — this is the fragment cost that scales with how much is on
-   * screen, i.e. exactly the busy moments. Dropping from three point lights to
-   * two removes a third of that math.
-   *
-   * The colour play survives because this one light cycles warm <-> cool as it
-   * sweeps (see the run loop), which is what the crossing pair was there to
-   * produce in the first place. `setRGB` into the existing Color allocates
-   * nothing per frame.
-   */
-  const sweepLight = new THREE.PointLight(VR.warmAccent, 2.2, 24);
+  const sweepLight = new THREE.PointLight(VR.warmAccent, 0.9, 28);
   sweepLight.position.set(-6, 3, 2);
   scene.add(sweepLight);
   const sweepWarm = new THREE.Color(VR.warmAccent);
   const sweepCool = new THREE.Color(VR.coolAccent);
-  const shipLight = new THREE.PointLight(VR.coolAccent, 1.8, 9);
+  const shipLight = new THREE.PointLight(VR.coolAccent, 0.75, 10);
   scene.add(shipLight);
 
-  // ── STAR FIELD ──
-  const starGeo = new THREE.BufferGeometry();
-  const SC = isTouch || lowCore ? 1100 : 1900;
-  const sp = new Float32Array(SC * 3);
-  const scArr = new Float32Array(SC * 3);
-  for (let i = 0; i < SC; i++) {
-    sp[i * 3] = (Math.random() - 0.5) * 500;
-    sp[i * 3 + 1] = (Math.random() - 0.5) * 200;
-    sp[i * 3 + 2] = (Math.random() - 0.5) * 500 - 100;
-    const t = Math.random();
-    scArr[i * 3] = t > 0.7 ? 0 : 1;
-    scArr[i * 3 + 1] = t > 0.7 ? 1 : t > 0.4 ? 0 : 0.5;
-    scArr[i * 3 + 2] = t > 0.7 ? 1 : 1;
+  // ── FLUFFY POLYMER CLAY CLOUDS (Replaces dark space stars) ──
+  const cloudGroup = new THREE.Group();
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xFAF7F0 });
+  const cloudGeo = new THREE.SphereGeometry(1, 10, 8);
+  const CLOUD_CLUSTERS = isTouch || lowCore ? 26 : 42;
+  for (let i = 0; i < CLOUD_CLUSTERS; i++) {
+    const cx = (Math.random() - 0.5) * 140;
+    const cy = 6 + Math.random() * 24;
+    const cz = -Math.random() * 220 - 12;
+    for (let p = 0; p < 3; p++) {
+      const puff = new THREE.Mesh(cloudGeo, cloudMat);
+      const r = 1.6 + Math.random() * 2.2;
+      puff.scale.set(r * 1.25, r * 0.72, r * 0.95);
+      puff.position.set(cx + (p - 1) * r * 0.95, cy + (p === 1 ? 0.55 : 0), cz);
+      cloudGroup.add(puff);
+    }
   }
-  starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-  starGeo.setAttribute('color', new THREE.BufferAttribute(scArr, 3));
-  const starMat = new THREE.PointsMaterial({ size: 0.5, vertexColors: true, transparent: true, opacity: 0.85 });
-  const stars = new THREE.Points(starGeo, starMat);
+  const stars = cloudGroup;
   scene.add(stars);
 
   // A few distant, unlit landmarks turn the corridor into a place without
@@ -1107,28 +1071,27 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
 
   const floorGeo = new THREE.PlaneGeometry(TUNNEL_W, SEG_DEPTH, 8, 1);
   floorGeo.rotateX(-Math.PI / 2);
-  const floorMat = neonMat({ color: VR.floor, roughness: 1, metalness: 0, emissive: 0x0d1128 });
+  const floorMat = neonMat({ color: VR.floor, roughness: 0.92, metalness: 0.02, emissive: 0x000000 });
   const floorMesh = new THREE.InstancedMesh(floorGeo, floorMat, NUM_SEGS);
-  // (shadowMap is disabled — see the renderer setup; these flags are inert)
   tunnelGroup.add(floorMesh);
 
-  const lineGeo = new THREE.BoxGeometry(0.04, 0.02, SEG_DEPTH);
-  const lineMat = new THREE.MeshBasicMaterial({ color: VR.laneLine, transparent: true, opacity: 0.76 });
+  const lineGeo = new THREE.BoxGeometry(0.06, 0.03, SEG_DEPTH);
+  const lineMat = new THREE.MeshLambertMaterial({ color: VR.laneLine, transparent: true, opacity: 0.5 });
   const lineMesh = new THREE.InstancedMesh(lineGeo, lineMat, NUM_SEGS * LINES_PER_SEG);
   tunnelGroup.add(lineMesh);
 
-  const stripGeo = new THREE.BoxGeometry(0.06, 0.06, SEG_DEPTH);
-  const leftStripMat = new THREE.MeshBasicMaterial({ color: VR.warmAccent });
-  const rightStripMat = new THREE.MeshBasicMaterial({ color: VR.coolAccent });
+  const stripGeo = new THREE.BoxGeometry(0.18, 0.14, SEG_DEPTH);
+  const leftStripMat = neonMat({ color: 0xD95A3D });
+  const rightStripMat = neonMat({ color: 0x5E9472 });
   const leftStripMesh = new THREE.InstancedMesh(stripGeo, leftStripMat, NUM_SEGS);
   const rightStripMesh = new THREE.InstancedMesh(stripGeo, rightStripMat, NUM_SEGS);
   tunnelGroup.add(leftStripMesh, rightStripMesh);
 
-  const archMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.68 });
-  const sideArchGeo = new THREE.BoxGeometry(0.1, TUNNEL_H, 0.1);
-  const sideArchMesh = new THREE.InstancedMesh(sideArchGeo, archMat, NUM_SEGS * 2); // left+right
+  const archMat = neonMat({ color: 0xffffff, roughness: 0.85 });
+  const sideArchGeo = new THREE.CylinderGeometry(0.18, 0.22, TUNNEL_H, 10);
+  const sideArchMesh = new THREE.InstancedMesh(sideArchGeo, archMat, NUM_SEGS * 2);
   tunnelGroup.add(sideArchMesh);
-  const topArchGeo = new THREE.BoxGeometry(TUNNEL_W, 0.1, 0.1);
+  const topArchGeo = new THREE.BoxGeometry(TUNNEL_W + 0.35, 0.28, 0.28);
   const topArchMesh = new THREE.InstancedMesh(topArchGeo, archMat, NUM_SEGS);
   tunnelGroup.add(topArchMesh);
 
@@ -1187,146 +1150,156 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
    * rebuild would have silently broken the corrected index too. Named handles
    * on `userData` cannot drift when a part is added or reordered.
    */
-  function hullGeometry() {
-    const s = new THREE.Shape();
-    // Right half (y >= 0), nose at +X — mirrored below for the left side.
-    s.moveTo(0.52, 0);
-    s.quadraticCurveTo(0.42, 0.1, 0.2, 0.13);      // nose -> shoulder
-    s.lineTo(0.06, 0.15);                           // body side
-    s.lineTo(-0.12, 0.42);                          // wing leading edge
-    s.lineTo(-0.26, 0.44);                          // wing tip
-    s.lineTo(-0.2, 0.15);                           // wing trailing edge
-    s.lineTo(-0.34, 0.13);                          // rear body
-    s.lineTo(-0.46, 0.2);                           // tail fin
-    s.lineTo(-0.4, 0.06);                           // tail notch
-    s.lineTo(-0.4, -0.06);
-    s.lineTo(-0.46, -0.2);
-    s.lineTo(-0.34, -0.13);
-    s.lineTo(-0.2, -0.15);
-    s.lineTo(-0.26, -0.44);
-    s.lineTo(-0.12, -0.42);
-    s.lineTo(0.06, -0.15);
-    s.lineTo(0.2, -0.13);
-    s.quadraticCurveTo(0.42, -0.1, 0.52, 0);
-    const geo = new THREE.ExtrudeGeometry(s, {
-      depth: 0.09,
-      bevelEnabled: true,
-      bevelThickness: 0.035,
-      bevelSize: 0.03,
-      bevelSegments: 2,
-      curveSegments: 8,
-    });
-    /* The silhouette is authored flat in XY with the nose at +X (it is drawn
-     * top-down in the Spaceship game). Void Runner flies down -Z with the
-     * camera behind, so the geometry is baked into that frame ONCE here —
-     * nose -> -Z, wingspan -> +/-X, extrusion depth -> +Y — instead of paying
-     * two mesh rotations every frame. */
-    geo.rotateX(-Math.PI / 2);
-    geo.rotateY(Math.PI / 2);
-    geo.center();
-    return geo;
-  }
-
   function buildShip() {
     const g = new THREE.Group();
-    const S = 2.3;   // hull is ~1.04 long in shape units -> ~2.4 world units
+    const S = 1.35;
 
-    const hull = new THREE.Mesh(
-      hullGeometry(),
-      neonMat({ color: VR.hull, emissive: VR.hullEmissive, emissiveIntensity: 0.55, roughness: 0.3, metalness: 0.6 }),
+    // 1. Plump sculpted Cobalt Blue polymer-clay airplane fuselage
+    const fusePoints = [
+      new THREE.Vector2(0.02, 1.05),
+      new THREE.Vector2(0.28, 0.85),
+      new THREE.Vector2(0.36, 0.35),
+      new THREE.Vector2(0.33, -0.35),
+      new THREE.Vector2(0.20, -0.88),
+      new THREE.Vector2(0.08, -1.12),
+    ];
+    const fuselageGeo = new THREE.LatheGeometry(fusePoints, 18);
+    fuselageGeo.rotateX(Math.PI / 2); // nose (-Z -> flip): rotateX(-PI/2) puts nose along -Z
+    fuselageGeo.rotateY(Math.PI);
+    const fuselage = new THREE.Mesh(
+      fuselageGeo,
+      neonMat({ color: VR.hull, roughness: 0.82, metalness: 0.04 }),
     );
-    hull.scale.setScalar(S);
-    
-    g.add(hull);
+    fuselage.scale.setScalar(S);
+    g.add(fuselage);
 
-    // Cream dorsal stripe down the spine.
+    // 2. Terracotta Coral clay nose spinner cone
+    const noseCap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.26 * S, 16, 12),
+      neonMat({ color: 0xD95A3D, roughness: 0.80 }),
+    );
+    noseCap.scale.set(1.0, 1.0, 1.25);
+    noseCap.position.set(0, 0, -0.96 * S);
+    g.add(noseCap);
+
+    // 3. Spinning 2-Blade Ochre Gold Clay Propeller
+    const propGroup = new THREE.Group();
+    propGroup.position.set(0, 0, -1.26 * S);
+    const propMat = neonMat({ color: 0xE3A12B, roughness: 0.74 });
+    const propHub = new THREE.Mesh(new THREE.SphereGeometry(0.11 * S, 12, 10), neonMat({ color: 0xFAF6EE }));
+    propGroup.add(propHub);
+    const blade1 = new THREE.Mesh(new THREE.BoxGeometry(0.12 * S, 0.92 * S, 0.05 * S), propMat);
+    const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.92 * S, 0.12 * S, 0.05 * S), propMat);
+    propGroup.add(blade1, blade2);
+    g.add(propGroup);
+
+    // 4. Rounded Warm Cream main wing + chunky Terracotta Coral tips
+    const wingMat = neonMat({ color: VR.stripe, roughness: 0.84 });
+    const mainWing = new THREE.Mesh(new THREE.BoxGeometry(2.55 * S, 0.14 * S, 0.68 * S), wingMat);
+    mainWing.position.set(0, 0.06 * S, -0.14 * S);
+    g.add(mainWing);
+
+    // Biplane upper wing + cobalt wing struts
+    const topWing = new THREE.Mesh(new THREE.BoxGeometry(2.35 * S, 0.13 * S, 0.56 * S), wingMat);
+    topWing.position.set(0, 0.62 * S, -0.22 * S);
+    g.add(topWing);
     const stripe = new THREE.Mesh(
-      new THREE.BoxGeometry(S * 0.05, 0.012, S * 0.66),
-      neonMat({ color: VR.stripe, emissive: VR.stripe, emissiveIntensity: 0.45, roughness: 0.4, metalness: 0.3 }),
+      new THREE.BoxGeometry(0.75 * S, 0.15 * S, 0.58 * S),
+      neonMat({ color: 0xD95A3D, roughness: 0.82 }),
     );
-    stripe.position.set(0, S * 0.055, -S * 0.02);
+    stripe.position.set(0, 0.625 * S, -0.22 * S);
     g.add(stripe);
 
-    // Glass canopy.
-    const cockpit = new THREE.Mesh(
-      new THREE.SphereGeometry(S * 0.13, 14, 10),
-      neonMat({ color: VR.glass, emissive: VR.glassEmissive, emissiveIntensity: 0.5, roughness: 0.15, metalness: 0.7 }),
+    const strutGeo = new THREE.CylinderGeometry(0.045 * S, 0.045 * S, 0.54 * S, 8);
+    const strutMat = neonMat({ color: 0xE3A12B });
+    for (const sx of [-0.72 * S, 0.72 * S]) {
+      const st = new THREE.Mesh(strutGeo, strutMat);
+      st.position.set(sx, 0.34 * S, -0.18 * S);
+      g.add(st);
+    }
+    for (const side of [-1, 1]) {
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.17 * S, 12, 10),
+        neonMat({ color: 0xD95A3D, roughness: 0.84 }),
+      );
+      tip.scale.set(1.1, 0.55, 1.9);
+      tip.position.set(side * 1.28 * S, 0.06 * S, -0.14 * S);
+      g.add(tip);
+    }
+
+    // 5. Rounded Tail Stabilizer & Vertical Fin
+    const tailHoriz = new THREE.Mesh(
+      new THREE.BoxGeometry(0.95 * S, 0.09 * S, 0.36 * S),
+      neonMat({ color: 0x5E9472, roughness: 0.85 }),
     );
-    cockpit.scale.set(1, 0.62, 1.7);
-    cockpit.position.set(0, S * 0.06, -S * 0.18);
+    tailHoriz.position.set(0, 0.08 * S, 0.88 * S);
+    g.add(tailHoriz);
+
+    const tailFin = new THREE.Mesh(
+      new THREE.BoxGeometry(0.10 * S, 0.52 * S, 0.40 * S),
+      neonMat({ color: 0xD95A3D, roughness: 0.84 }),
+    );
+    tailFin.position.set(0, 0.32 * S, 0.88 * S);
+    g.add(tailFin);
+
+    // 6. Smooth Cream/Sky Pilot Canopy Dome
+    const cockpit = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24 * S, 14, 12),
+      neonMat({ color: 0x4E7CB8, emissive: 0x2E5EA8, emissiveIntensity: 0.15, roughness: 0.35 }),
+    );
+    cockpit.scale.set(0.85, 0.75, 1.35);
+    cockpit.position.set(0, 0.24 * S, -0.02 * S);
     g.add(cockpit);
 
-    // Twin nacelles + thrust flames.
+    // 7. Puffy white slipstream exhaust clouds (replaces hot thruster cones)
     const thrusters = [];
     for (const side of [-1, 1]) {
-      const nac = new THREE.Mesh(
-        new THREE.CylinderGeometry(S * 0.055, S * 0.075, S * 0.3, 10),
-        neonMat({ color: VR.nacelle, emissive: VR.warmAccent, emissiveIntensity: 0.2, roughness: 0.35, metalness: 0.6 }),
-      );
-      nac.rotation.x = Math.PI / 2;
-      nac.position.set(side * S * 0.19, S * 0.02, S * 0.28);
-      g.add(nac);
       const flame = new THREE.Mesh(
-        new THREE.ConeGeometry(S * 0.055, S * 0.3, 8),
+        new THREE.SphereGeometry(0.11 * S, 8, 8),
         new THREE.MeshBasicMaterial({
-          color: VR.thrust,
+          color: 0xFAF7F0,
           transparent: true,
-          opacity: 0.85,
-          blending: THREE.AdditiveBlending,
+          opacity: 0.65,
           depthWrite: false,
         }),
       );
-      /* Apex +Z, i.e. tapering AWAY behind the ship: a cone's apex is +Y, and
-       * +PI/2 about X maps +Y to +Z. (-PI/2 points it forward, which buries the
-       * wide end of the flame inside the hull.) Positioned so the base sits at
-       * the tail — the hull's half-length is 1.21 at this scale and the cone is
-       * 0.69 long, so 0.68*S puts the base on the transom, not through it. */
-      flame.rotation.x = Math.PI / 2;
-      flame.position.set(side * S * 0.19, S * 0.02, S * 0.68);
+      flame.scale.set(1, 0.85, 1.8);
+      flame.position.set(side * 0.24 * S, 0.02 * S, 1.18 * S);
       g.add(flame);
       thrusters.push(flame);
     }
 
-    // Under-glow halo, so the ship sits ON the lane rather than floating over it.
+    // Soft grounded clay shadow disc beneath the plane
     const halo = new THREE.Mesh(
-      new THREE.CircleGeometry(S * 0.55, 20),
+      new THREE.CircleGeometry(1.15 * S, 20),
       new THREE.MeshBasicMaterial({
-        color: VR.coolAccent,
+        color: 0xB3A58E,
         transparent: true,
-        opacity: 0.2,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.38,
         depthWrite: false,
       }),
     );
     halo.rotation.x = -Math.PI / 2;
-    halo.position.y = -S * 0.09;
+    halo.position.y = -0.82 * S;
     g.add(halo);
 
-    // Engine core — the part the run loop pulses, and the invincibility tell.
+    // Tail shield/power gem indicator
     const glow = new THREE.Mesh(
-      new THREE.SphereGeometry(0.22, 8, 8),
-      neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 2.8, transparent: true, opacity: 0.85 }),
+      new THREE.SphereGeometry(0.16 * S, 10, 8),
+      neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 0.5, transparent: true, opacity: 0.9 }),
     );
-    glow.position.set(0, S * 0.02, S * 0.42);
+    glow.position.set(0, 0.16 * S, 1.05 * S);
     g.add(glow);
 
-    const trail = new THREE.Mesh(
-      new THREE.ConeGeometry(0.2, 1.0, 8),
-      neonMat({ color: VR.coolAccent, emissive: VR.coolAccent, emissiveIntensity: 2.4, transparent: true, opacity: 0.45 }),
-    );
-    trail.rotation.x = -Math.PI / 2;
-    trail.position.set(0, S * 0.02, S * 0.72);
-    g.add(trail);
-
-    // Named handles — see the warning above. Never index into g.children.
     g.userData.cockpit = cockpit;
     g.userData.glow = glow;
     g.userData.thrusters = thrusters;
+    g.userData.propeller = propGroup;
     return g;
   }
-  const SHIP_BASE_Y = 0.3;
+  const SHIP_BASE_Y = 0.36;
   const ship = buildShip();
-  const SHIP_VISUAL_SCALE = 0.68;
+  const SHIP_VISUAL_SCALE = 0.72;
   const SHIP_HIT_X = 0.78;
   const SHIP_HIT_Y = 0.72;
   const SHIP_PICKUP_X = 0.9;
@@ -1335,6 +1308,7 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   const shipCockpit = ship.userData.cockpit;
   const shipGlow = ship.userData.glow;
   const shipThrusters = ship.userData.thrusters;
+  const shipPropeller = ship.userData.propeller;
   ship.position.set(0, SHIP_BASE_Y, 6);
   ship.frustumCulled = false;
   ship.traverse((child) => { child.frustumCulled = false; });
@@ -1345,16 +1319,16 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   const obstaclePool = [];
   const activeObstacles = [];
   const obsMats = [
-    neonMat({ color: 0x9b4f49, emissive: 0x3f1715, roughness: 0.45, metalness: 0.45 }),
-    neonMat({ color: 0xb26b32, emissive: 0x46230d, roughness: 0.45, metalness: 0.45 }),
-    neonMat({ color: 0x744b67, emissive: 0x2c1727, roughness: 0.45, metalness: 0.45 }),
+    neonMat({ color: 0xD95A3D, roughness: 0.85, metalness: 0.04 }),
+    neonMat({ color: 0x2E5EA8, roughness: 0.85, metalness: 0.04 }),
+    neonMat({ color: 0x8C5A7E, roughness: 0.85, metalness: 0.04 }),
   ];
   const obsGeos = [
-    new THREE.BoxGeometry(1.3, 1.3, 1.3),
-    new THREE.OctahedronGeometry(0.85),
-    new THREE.TetrahedronGeometry(1.0),
-    new THREE.IcosahedronGeometry(0.75),
-    new THREE.TorusGeometry(0.65, 0.22, 8, 14),
+    new THREE.BoxGeometry(1.25, 1.25, 1.25),
+    new THREE.CylinderGeometry(0.62, 0.74, 1.35, 14),
+    new THREE.SphereGeometry(0.76, 14, 12),
+    new THREE.IcosahedronGeometry(0.75, 1),
+    new THREE.TorusGeometry(0.62, 0.24, 10, 18),
   ];
   function getObstacleFromPool() {
     if (obstaclePool.length > 0) {
@@ -1384,11 +1358,12 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   // ── GEM POOL ──
   const gemPool = [];
   const activeGems = [];
-  const gemMat = neonMat({ color: VR.gem, emissive: 0xc98a30, emissiveIntensity: 1.8, roughness: 0.1, metalness: 0.8 });
+  const gemMat = neonMat({ color: VR.gem, emissive: 0xC67D10, emissiveIntensity: 0.35, roughness: 0.55, metalness: 0.08 });
+  const gemCoinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.14, 16);
+  gemCoinGeo.rotateX(Math.PI / 2);
   function getGem() {
     if (gemPool.length > 0) { const g = gemPool.pop(); g.visible = true; scene.add(g); return g; }
-    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.38), gemMat);
-    
+    const m = new THREE.Mesh(gemCoinGeo, gemMat);
     scene.add(m);
     return m;
   }
@@ -1532,11 +1507,11 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
   const PULSE_INTERVAL = 130;  // ms between bolts
   const PULSE_SPEED = 1.15;    // world units per frame-unit, away from camera
   const BOLT_POOL = 16;
-  const boltGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.5, 6);
-  boltGeo.rotateX(Math.PI / 2);   // baked: axis along Z, the direction of travel
-  const boltMat = new THREE.MeshBasicMaterial({
-    color: VR.thrust, transparent: true, opacity: 0.9,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+  const boltGeo = new THREE.SphereGeometry(0.24, 10, 8);
+  const boltMat = neonMat({
+    color: 0x2E5EA8,
+    emissive: 0x1E4278,
+    emissiveIntensity: 0.35,
   });
   const boltPool = [];
   const activeBolts = [];
@@ -1955,18 +1930,25 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
     }
 
     if (state === 'menu' || state === 'gameover') {
-      ship.position.y = SHIP_BASE_Y + Math.sin(worldTime * 1.2) * 0.12;
-      ship.rotation.y = Math.sin(worldTime * 0.4) * 0.18;
-      camera.position.x = Math.sin(worldTime * 0.2) * 1.2;
+      if (shipPropeller) shipPropeller.rotation.z += 0.38 * rawDt;
+      ship.position.y = SHIP_BASE_Y + Math.sin(worldTime * 1.4) * 0.12;
+      ship.rotation.z = Math.sin(worldTime * 0.9) * 0.08;
+      ship.rotation.y = Math.sin(worldTime * 0.4) * 0.16;
+      camera.position.x = Math.sin(worldTime * 0.25) * 1.1;
       camera.lookAt(0, 0.5, 0);
       shipLight.position.copy(ship.position);
       updateParticles(rawDt);
       renderer.render(scene, camera);
       return;
     }
-    if (state === 'paused' || state === 'countdown') { renderer.render(scene, camera); return; }
+    if (state === 'paused' || state === 'countdown') {
+      if (shipPropeller && state === 'countdown') shipPropeller.rotation.z += 0.52 * rawDt;
+      renderer.render(scene, camera);
+      return;
+    }
 
     // ═══ PLAYING ═══
+    if (shipPropeller) shipPropeller.rotation.z += (0.55 + gameSpeed * 0.35) * rawDt;
     runTime += rawDt / 60;
     if (keys.left) moveLane('left');
     if (keys.right) moveLane('right');
@@ -2012,11 +1994,11 @@ function createVoidRunner(root, THREE, { onBack, isAppSfxOn, isAppMusicOn }) {
       if (invincibleTimer <= 0) {
         invincible = false;
         shipCockpit.material.emissive.setHex(VR.glassEmissive);
-        shipCockpit.material.emissiveIntensity = 0.5;
+        shipCockpit.material.emissiveIntensity = 0.15;
         shipGlow.material.emissive.setHex(VR.coolAccent);
-        shipGlow.material.emissiveIntensity = 4;
+        shipGlow.material.emissiveIntensity = 0.5;
         shipLight.color.setHex(VR.coolAccent);
-        shipLight.intensity = 3;
+        shipLight.intensity = 0.75;
       }
     }
 

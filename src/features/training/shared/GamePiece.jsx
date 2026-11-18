@@ -65,6 +65,7 @@ export default function GamePiece({
   // vanishing from the accessibility tree mid-round.
   const isButton = !!onTap;
   const Tag = isButton ? 'button' : 'div';
+  const sheenId = `clay-sheen-${React.useId().replace(/:/g, '')}`;
 
   return (
     <Tag
@@ -97,14 +98,19 @@ export default function GamePiece({
       )}
 
       <svg viewBox={`0 0 ${box} ${box}`} width="100%" height="100%" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id={sheenId} cx="32%" cy="28%" r="68%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.42" />
+            <stop offset="58%" stopColor="#ffffff" stopOpacity="0.0" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.16" />
+          </radialGradient>
+        </defs>
         <g transform={`translate(${mid} ${mid}) scale(${s}) translate(${-mid} ${-mid})`}>
-          {/* Shaded lower side — what gives a flat shape form.
-              SH markup paints with fill="currentColor", so the colour has to be
-              set via `color`; a `fill` attribute here would be overridden by the
-              child's own fill and every piece would come out black.
-              Skipped when art is present: the illustrated object replaces it. */}
           {!artUrl && (
-          <g transform={`translate(${mid} ${mid + box * 0.035}) scale(${SHAPE_SCALE}) translate(-50 -50)`}
+            <ellipse cx={mid} cy={mid + box * 0.34} rx={box * 0.28} ry={box * 0.08} fill="rgba(27,31,36,0.14)" />
+          )}
+          {!artUrl && (
+          <g transform={`translate(${mid} ${mid + box * 0.055}) scale(${SHAPE_SCALE}) translate(-50 -50)`}
              style={{ color: v.edge }}
              dangerouslySetInnerHTML={{ __html: markup }} />
           )}
@@ -112,6 +118,11 @@ export default function GamePiece({
           <g transform={`translate(${mid} ${mid}) scale(${SHAPE_SCALE}) translate(-50 -50)`}
              style={{ color: v.fill }}
              stroke={v.stroke} strokeWidth={v.strokeWidth}
+             dangerouslySetInnerHTML={{ __html: markup }} />
+          )}
+          {!artUrl && (
+          <g transform={`translate(${mid} ${mid}) scale(${SHAPE_SCALE}) translate(-50 -50)`}
+             style={{ color: `url(#${sheenId})`, mixBlendMode: 'soft-light', pointerEvents: 'none' }}
              dangerouslySetInnerHTML={{ __html: markup }} />
           )}
           {v.ring !== 'none' && (
@@ -125,7 +136,7 @@ export default function GamePiece({
             <text
               x={mid} y={mid} fill={GAME_INK} fontSize={box * 0.3} fontWeight="700"
               textAnchor="middle" dominantBaseline="central"
-              fontFamily="Outfit, system-ui, sans-serif"
+              fontFamily="Inter, Cairo, system-ui, sans-serif"
             >
               {label}
             </text>
