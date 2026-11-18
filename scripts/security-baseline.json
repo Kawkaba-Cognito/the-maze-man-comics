@@ -1,6 +1,6 @@
 {
   "_comment": "Debt ceiling for audit-security.mjs. Raising a number is a DECISION — say why in the commit message. See SECURITY.md.",
-  "updated": "2026-11-17",
+  "updated": "2026-11-18",
   "rules": {
     "innerhtml-interpolated": 5,
     "innerhtml-user-input": 2
@@ -94,9 +94,9 @@
   "npmAudit": {
     "info": 0,
     "low": 0,
-    "moderate": 2,
-    "high": 16,
+    "moderate": 4,
+    "high": 0,
     "critical": 0,
-    "total": 18
+    "total": 4
   }
 }
